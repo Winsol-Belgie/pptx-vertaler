@@ -1,115 +1,122 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Winsol Presentatievertaler</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --paper:#f3f4f4; --paper-2:#ffffff; --ink:#23292b; --ink-soft:#485155; --ink-faint:#9aa2a4;
-  --line:#e4e7e7; --surface-dark:#2f3638; --accent:#fed501; --accent-ink:#23292b; --info:#0d5475;
-  --ok:#2f7d4f; --ok-bg:#e7f2ec; --warn:#b56b00; --warn-bg:#fbecd5; --bad:#d83b3a; --bad-bg:#fce3e2;
-}
-*{box-sizing:border-box;}
-body{margin:0;background:var(--paper);color:var(--ink-soft);font-family:'Poppins',Arial,sans-serif;}
-.wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px;}
-header.hero{background:var(--paper-2);border:1px solid var(--line);border-radius:18px;padding:28px 26px;position:relative;overflow:hidden;margin-bottom:24px;}
-header.hero::before,header.hero::after{content:"";position:absolute;width:70px;height:70px;background:var(--accent);}
-header.hero::before{top:0;left:0;clip-path:polygon(0 0,100% 0,0 100%);}
-header.hero::after{bottom:0;right:0;clip-path:polygon(100% 100%,0 100%,100% 0);}
-header.hero h1{margin:0 0 4px;color:var(--ink);font-weight:700;font-size:26px;}
-header.hero p{margin:0;color:var(--ink-faint);font-size:14px;line-height:1.55;max-width:74ch;}
-.card{background:var(--paper-2);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:20px;}
-.dropzone{border:2px dashed var(--line);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:.15s;}
-.dropzone.drag{border-color:var(--accent);background:#fffdf0;}
-.dropzone p{margin:6px 0;}
-.dropzone .fname{color:var(--info);font-weight:600;word-break:break-all;}
-button{font-family:inherit;}
-.btn{background:var(--accent);color:var(--accent-ink);border:none;border-radius:11px;padding:12px 22px;font-weight:700;font-size:14px;cursor:pointer;}
-.btn:disabled{opacity:.45;cursor:not-allowed;}
-.btn.secondary{background:var(--surface-dark);color:#fff;}
-.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;}
-.status{font-size:13px;color:var(--ink-faint);}
-.status.err{color:var(--bad);}
-.status.ok{color:var(--ok);}
-.progress-track{background:var(--line);border-radius:8px;height:8px;overflow:hidden;margin-top:12px;}
-.progress-fill{background:var(--accent);height:100%;width:0%;transition:width .25s ease;}
-h2.part-title{color:var(--ink);font-size:17px;font-weight:700;margin:0 0 4px;}
-.part-sub{color:var(--ink-faint);font-size:12px;margin:0 0 12px;line-height:1.55;}
-.step-label{display:inline-block;background:var(--surface-dark);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;margin-right:8px;vertical-align:middle;}
-.info-banner{background:#fff9da;border-left:4px solid var(--accent);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--ink);margin-bottom:16px;line-height:1.55;}
-.filter-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:14px 0 6px;}
-.filter-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--ink-faint);font-weight:600;min-width:0;}
-.filter-field select{border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:13px;color:var(--ink-soft);background:var(--paper-2);}
-.filter-field select:focus{outline:2px solid var(--accent);outline-offset:1px;}
-.check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);cursor:pointer;margin-top:12px;}
-.check input{margin:0;}
-.stat-row{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 16px;}
-.stat{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:130px;flex:1;}
-.stat b{display:block;font-size:22px;color:var(--info);font-weight:700;}
-.stat span{font-size:12px;color:var(--ink-faint);}
-h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18px 0 6px;}
-.pill{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap;}
-.pill.issue{background:var(--warn-bg);color:var(--warn);}
-.pill.negative{background:var(--bad-bg);color:var(--bad);}
-.pill.ok{background:var(--ok-bg);color:var(--ok);}
-.report-list{margin:0;padding:0;list-style:none;}
-.report-list li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;}
-.report-list li:last-child{border-bottom:none;}
-.report-list .ranked-cat{flex-shrink:0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:2px 9px;font-size:11px;color:var(--ink-soft);white-space:nowrap;}
-.report-list .txt{flex:1;min-width:0;}
-.report-list .orig{color:var(--ink-faint);font-size:12px;}
-.report-empty{font-size:13px;color:var(--ink-faint);margin:4px 0;}
-.term-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px;}
-.term-chip{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:11.5px;color:var(--ink-soft);}
-#resultCard{display:none;}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Winsol Presentatievertaler</title>
 
-/* In-/uitklapbare kaarten — zelfde gedrag als Feedbackloop. */
-.card-head{display:flex;justify-content:flex-end;align-items:center;gap:10px;}
-.card-head.has-summary{justify-content:space-between;}
-.collapse-summary{margin:0;font-size:13px;font-weight:600;color:var(--ink);}
-.collapse-toggle{flex-shrink:0;background:var(--paper);border:1px solid var(--line);border-radius:8px;width:28px;height:28px;font-size:13px;line-height:1;cursor:pointer;color:var(--ink-soft);}
-.collapse-toggle:hover{background:var(--line);}
+  <!-- Winsol SO!Crates design system — zelfde bestand als de Meeting Report Generator -->
+  <link rel="stylesheet" href="styles.css?v=202610111600" />
 
-/* --- Login (overgenomen van Feedbackloop) --- */
-#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
-.login-card{background:var(--paper-2);border:1px solid var(--line);border-radius:18px;padding:32px 28px;max-width:360px;width:100%;text-align:center;}
-.login-card h1{font-size:20px;margin:0 0 4px;color:var(--ink);}
-.login-card .login-sub{color:var(--ink-faint);font-size:13px;margin:0 0 20px;}
-.login-form{display:flex;flex-direction:column;gap:12px;text-align:left;}
-.login-form input[type=text],.login-form input[type=password]{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:14px;background:var(--paper);}
-.login-form input:focus{outline:2px solid var(--accent);outline-offset:1px;}
-.login-pw-wrap{position:relative;}
-.login-pw-wrap input{padding-right:38px !important;}
-.login-pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;padding:4px;}
-.login-remember{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);cursor:pointer;}
-.login-remember input{margin:0;}
-.login-btn{width:100%;}
-.login-error{color:var(--bad);font-size:13px;min-height:16px;}
-#appRoot{display:none;}
-.topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:-8px;padding-bottom:16px;font-size:13px;color:var(--ink-faint);}
-.topbar b{color:var(--ink);}
-.topbar .btn.secondary{padding:6px 14px;font-size:12px;border-radius:8px;}
+  <style>
+    /* ── Overgenomen van de Meeting Report Generator (app-specifieke aanvullingen op styles.css) ── */
+    .step-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; background: var(--brand); border-radius: 50%;
+      font-size: 0.75rem; font-weight: 700; color: #111; flex-shrink: 0;
+    }
+    .section-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.95rem; font-weight: 700; margin: 0 0 16px; color: var(--text);
+    }
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: 10px; padding: 24px 16px;
+      text-align: center; cursor: pointer; transition: background 0.15s, border-color 0.15s; background: #fafafa;
+    }
+    .drop-zone:hover   { border-color: var(--brand); background: #fffbe6; }
+    .drop-zone.drag-over { border-color: var(--brand); background: #fffbe6; }
+    .drop-zone svg { width: 28px; height: 28px; color: #ccc; margin: 0 auto 8px; display: block; }
+    .drop-zone p  { font-size: 0.8rem; color: var(--muted); margin: 0; }
+    .drop-zone.has-file { border-color: #22c55e; background: #f0fdf4; }
+    .drop-zone.has-file p { color: #16a34a; font-weight: 600; word-break: break-all; }
+    .upload-hint { font-size: 0.72rem; color: var(--muted); margin: 4px 0 0; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-grid .span-2 { grid-column: 1 / -1; }
+    .field-label { display: block; font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 5px; }
+    .field-input {
+      width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.9rem; background: #fff; color: var(--text); box-sizing: border-box; font-family: inherit; transition: border-color 0.15s;
+    }
+    .field-input:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
+    select.field-input { appearance: none; -webkit-appearance: none; cursor: pointer; }
+    .generate-wrap { display: flex; flex-direction: column; align-items: center; margin: 6px 0; }
+    #translateBtn { padding: 12px 40px; font-size: 1rem; font-weight: 700; border-radius: 10px; min-width: 200px; }
+    #translateBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-outline {
+      padding: 7px 14px; font-size: 0.82rem; font-weight: 600; border: 1px solid var(--border); border-radius: 8px;
+      background: #fff; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .btn-outline:hover { border-color: var(--brand); background: #fffbe6; }
 
-/* --- Taalkeuze van de app (zoals Winsol-Socrates) --- */
-.language-box{display:flex;align-items:center;gap:8px;}
-.lang-icon{width:20px;height:20px;fill:var(--ink-faint);flex-shrink:0;}
-.language-wrapper{position:relative;display:inline-block;}
-.language-wrapper select{appearance:none;-webkit-appearance:none;font-family:inherit;font-size:13px;padding:6px 32px 6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper-2);color:var(--ink-soft);height:32px;cursor:pointer;}
-.language-wrapper select:hover{border-color:var(--ink-faint);}
-.language-wrapper select:focus{outline:2px solid var(--accent);outline-offset:1px;}
-.language-wrapper::after{content:"";position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--ink-faint);}
-.login-lang{justify-content:center;margin-top:18px;}
-.topbar{flex-wrap:wrap;}
-.topbar .language-box{margin-right:auto;}
-</style>
+    /* Taalkeuze, topbar en login — identiek aan de Meeting Report Generator */
+    .language-box { display:flex; align-items:center; gap:8px; }
+    .lang-icon { width:20px; height:20px; fill:var(--muted); flex-shrink:0; }
+    .language-wrapper { position:relative; display:inline-block; }
+    .language-wrapper select { appearance:none; -webkit-appearance:none; font-family:inherit; font-size:13px; padding:6px 32px 6px 12px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--text); height:32px; cursor:pointer; }
+    .language-wrapper select:hover { border-color:var(--muted); }
+    .language-wrapper select:focus { outline:2px solid var(--brand); outline-offset:1px; }
+    .language-wrapper::after { content:""; position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid var(--muted); }
+    .login-lang { justify-content:center; margin-top:18px; }
+    .btn-dark { background:#2f3638; color:#fff; border:none; border-radius:8px; padding:6px 14px; font-family:inherit; font-weight:700; font-size:12px; cursor:pointer; }
+    .btn-dark:hover { background:#23292b; }
+    #loginScreen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
+    .login-card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:32px 28px; max-width:360px; width:100%; text-align:center; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+    .login-card .login-logo { width:56px; height:56px; margin-bottom:12px; }
+    .login-card h1 { font-size:20px; margin:0 0 4px; color:var(--text); }
+    .login-card .login-sub { color:var(--muted); font-size:13px; margin:0 0 20px; }
+    .login-form { display:flex; flex-direction:column; gap:12px; text-align:left; }
+    .login-form input[type=text], .login-form input[type=password] { width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:14px; background:#f7f7f8; color:var(--text); }
+    .login-form input:focus { outline:2px solid var(--brand); outline-offset:1px; }
+    .login-pw-wrap { position:relative; }
+    .login-pw-wrap input { padding-right:38px !important; }
+    .login-pw-eye { position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--muted); font-size:16px; padding:4px; }
+    .login-remember { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); cursor:pointer; }
+    .login-remember input { margin:0; }
+    .login-btn { width:100%; }
+    .login-error { color:#c00; font-size:13px; min-height:16px; }
+    #appRoot { display:none; }
+    .topbar { display:flex; justify-content:flex-end; align-items:center; flex-wrap:wrap; gap:10px; max-width:980px; margin:0 auto; padding:16px 20px 0; font-size:13px; color:var(--muted); box-sizing:border-box; }
+    .topbar .language-box { margin-right:auto; }
+    .topbar b { color:var(--text); }
+
+    /* ── Specifiek voor de Presentatievertaler ── */
+    .status.err { color:#c53030; }
+    .status.ok { color:#16a34a; }
+    .check { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#555; cursor:pointer; margin-top:14px; }
+    .check input { margin:0; width:16px; height:16px; accent-color:var(--brand); }
+    .info-banner { background:#fffbe6; border-left:4px solid var(--brand); border-radius:8px; padding:12px 14px; font-size:0.82rem; color:var(--text); line-height:1.55; margin-bottom:16px; }
+    .progress-track { background:var(--border); border-radius:8px; height:8px; overflow:hidden; margin-top:12px; width:100%; max-width:420px; }
+    .progress-fill { background:var(--brand); height:100%; width:0%; transition:width .25s ease; }
+    .result-actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+    .part-sub { font-size:0.8rem; color:var(--muted); margin:0 0 12px; line-height:1.5; }
+    .stat-row { display:flex; gap:12px; flex-wrap:wrap; margin:0 0 16px; }
+    .stat { background:#fafafa; border:1px solid var(--border); border-radius:10px; padding:12px 14px; min-width:120px; flex:1; }
+    .stat b { display:block; font-size:1.3rem; color:var(--text); font-weight:700; }
+    .stat span { font-size:0.75rem; color:var(--muted); }
+    h3.part-subtitle { font-size:0.88rem; font-weight:700; color:var(--text); margin:18px 0 6px; }
+    .pill { border-radius:20px; padding:3px 10px; font-size:0.7rem; font-weight:700; white-space:nowrap; }
+    .pill.issue { background:#fbecd5; color:#b56b00; }
+    .pill.negative { background:#fce3e2; color:#c53030; }
+    .report-list { margin:0; padding:0; list-style:none; }
+    .report-list li { display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--border); font-size:0.85rem; }
+    .report-list li:last-child { border-bottom:none; }
+    .report-list .ranked-cat { flex-shrink:0; background:#fafafa; border:1px solid var(--border); border-radius:20px; padding:2px 9px; font-size:0.7rem; color:var(--muted); white-space:nowrap; }
+    .report-list .txt { flex:1; min-width:0; }
+    .report-list .orig { color:var(--muted); font-size:0.78rem; }
+    .report-empty { font-size:0.85rem; color:var(--muted); margin:4px 0; }
+    .term-chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 4px; }
+    .term-chip { background:#fafafa; border:1px solid var(--border); border-radius:20px; padding:3px 10px; font-size:0.75rem; color:#555; }
+    .admin-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+    #resultCard { display:none; }
+  </style>
 </head>
-<body>
 
+<body>
 <div id="loginScreen">
   <div class="login-card">
+    <img src="Winsol_Avatar_150px.png" class="login-logo" alt="Winsol" onerror="this.style.display='none'">
     <h1 data-i18n="appTitle">Presentatievertaler</h1>
     <p class="login-sub" data-i18n="loginSub">Log in om verder te gaan.</p>
     <div class="login-form">
@@ -122,7 +129,7 @@ h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18p
         <input type="checkbox" id="loginRemember">
         <span data-i18n="remember">Blijf aangemeld</span>
       </label>
-      <button class="btn login-btn" id="loginSubmitBtn" type="button" data-i18n="loginBtn">Aanmelden</button>
+      <button class="login-btn" id="loginSubmitBtn" type="button" data-i18n="loginBtn">Aanmelden</button>
       <div class="login-error" id="loginError"></div>
     </div>
     <div class="language-box login-lang">
@@ -132,120 +139,143 @@ h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18p
   </div>
 </div>
 
-<div class="wrap" id="appRoot">
+<div id="appRoot">
   <div class="topbar" id="topbar" hidden>
     <div class="language-box">
       <svg class="lang-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm7.93 9h-3.05a15.1 15.1 0 00-1.12-5.18 8.03 8.03 0 014.17 5.18zM12 4c.88 1.14 1.57 2.71 1.97 4.5H10.03C10.43 6.71 11.12 5.14 12 4zm-3.76.82A15.1 15.1 0 006.12 11H3.07a8.03 8.03 0 015.17-6.18zM3.07 13h3.05a15.1 15.1 0 001.12 5.18A8.03 8.03 0 013.07 13zm8.93 7c-.88-1.14-1.57-2.71-1.97-4.5h3.94c-.4 1.79-1.09 3.36-1.97 4.5zm3.76-.82a15.1 15.1 0 001.12-5.18h3.05a8.03 8.03 0 01-4.17 5.18z"/></svg>
       <div class="language-wrapper"><select id="uiLangApp" class="ui-lang" data-i18n-title="uiLanguage"></select></div>
     </div>
-    <span class="topbar-user"><span data-i18n="loggedInAs">Ingelogd als</span> <b id="topbarUser"></b> (<span id="topbarRole"></span>)</span>
-    <button class="btn secondary" id="logoutBtn" type="button" data-i18n="logout">Uitloggen</button>
+    <span><span data-i18n="loggedInAs">Ingelogd als</span> <b id="topbarUser"></b> (<span id="topbarRole"></span>)</span>
+    <button class="btn-dark" id="logoutBtn" type="button" data-i18n="logout">Uitloggen</button>
   </div>
 
-  <header class="hero">
-    <h1 data-i18n="appTitle">Presentatievertaler</h1>
-    <p data-i18n="heroText"></p>
-  </header>
+<div class="container">
 
-  <div class="card" id="uploadCard">
-    <div class="card-head">
-      <p class="collapse-summary" id="uploadSummary" hidden></p>
-      <button class="collapse-toggle" id="uploadToggle" type="button" aria-expanded="true" aria-controls="uploadBody" aria-label="Sectie in-/uitklappen">&#9662;</button>
+  <!-- ══ HERO ═══════════════════════════════════════════════════════ -->
+  <div class="hero">
+    <div>
+      <h1 class="hero__title" data-i18n="appTitle">Presentatievertaler</h1>
     </div>
-    <div id="uploadBody">
-      <h2 class="part-title"><span class="step-label" data-i18n="step" data-i18n-vars='{"n":1}'></span><span data-i18n="stepPresentation"></span></h2>
-      <p class="part-sub" data-i18n="fileHint" data-i18n-vars='{"mb":30}'></p>
-      <div class="dropzone" id="dropzone">
-        <p data-i18n-html="dropPptx"></p>
-        <p class="fname" id="fname" data-i18n="noFile"></p>
-        <input type="file" id="fileInput" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden>
-      </div>
-      <p class="status" id="fileStatus" style="margin-top:10px;"></p>
+    <img src="Winsol_Avatar_150px.png" class="hero__logo" alt="Winsol" />
+  </div>
 
-      <h2 class="part-title" style="margin-top:22px;"><span class="step-label" data-i18n="step" data-i18n-vars='{"n":2}'></span><span data-i18n="stepLanguage"></span></h2>
-      <div class="filter-row">
-        <label class="filter-field">
-          <span data-i18n="sourceLabel"></span>
-          <select id="sourceLang"></select>
-        </label>
-        <label class="filter-field">
-          <span data-i18n="targetLabel"></span>
-          <select id="targetLang"></select>
-        </label>
-      </div>
-      <label class="check">
-        <input type="checkbox" id="includeNotes">
-        <span data-i18n="includeNotes"></span>
-      </label>
-      <p class="status" id="glossaryInfo" style="margin-top:10px;"></p>
+  <!-- ══ STAP 1: PRESENTATIE ════════════════════════════════════════ -->
+  <div class="ts-card">
+    <h2 class="section-title">
+      <span class="step-badge">1</span>
+      <span data-i18n="stepPresentation">Presentatie</span>
+    </h2>
+    <div id="dropzone" class="drop-zone">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+      </svg>
+      <p class="drop-hint" data-i18n-html="dropPptx"></p>
+      <p class="fname" id="fname" hidden></p>
+    </div>
+    <input type="file" id="fileInput" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" style="display:none">
+    <p class="upload-hint" data-i18n="fileHint" data-i18n-vars='{"mb":30}'></p>
+    <p class="status" id="fileStatus"></p>
+  </div>
 
-      <h2 class="part-title" style="margin-top:22px;"><span class="step-label" data-i18n="step" data-i18n-vars='{"n":3}'></span><span data-i18n="stepTranslate"></span></h2>
-      <div class="info-banner" data-i18n-html="privacyBanner"></div>
-      <div class="row">
-        <button class="btn" id="translateBtn" disabled data-i18n="translateBtn"></button>
-        <span class="status" id="translateStatus"></span>
+  <!-- ══ STAP 2: TAAL ═══════════════════════════════════════════════ -->
+  <div class="ts-card">
+    <h2 class="section-title">
+      <span class="step-badge">2</span>
+      <span data-i18n="stepLanguage">Taal</span>
+    </h2>
+    <div class="form-grid">
+      <div>
+        <label class="field-label" for="sourceLang" data-i18n="sourceLabel"></label>
+        <select id="sourceLang" class="field-input"></select>
       </div>
+      <div>
+        <label class="field-label" for="targetLang" data-i18n="targetLabel"></label>
+        <select id="targetLang" class="field-input"></select>
+      </div>
+    </div>
+    <label class="check">
+      <input type="checkbox" id="includeNotes">
+      <span data-i18n="includeNotes"></span>
+    </label>
+    <p class="status" id="glossaryInfo"></p>
+  </div>
+
+  <!-- ══ STAP 3: VERTALEN ═══════════════════════════════════════════ -->
+  <div class="ts-card">
+    <h2 class="section-title">
+      <span class="step-badge">3</span>
+      <span data-i18n="stepTranslate">Vertalen</span>
+    </h2>
+    <div class="info-banner" data-i18n-html="privacyBanner"></div>
+    <div class="generate-wrap">
+      <button id="translateBtn" class="primary" disabled data-i18n="translateBtn"></button>
+      <p class="status" id="translateStatus"></p>
       <div class="progress-track" id="progressBar" hidden><div class="progress-fill" id="progressFill"></div></div>
     </div>
   </div>
 
-  <div class="card" id="resultCard">
-    <h2 class="part-title" data-i18n="resultTitle"></h2>
+  <!-- ══ RESULTAAT ══════════════════════════════════════════════════ -->
+  <div class="ts-card" id="resultCard">
+    <h2 class="section-title">
+      <span class="step-badge">&#10003;</span>
+      <span data-i18n="resultTitle">Resultaat</span>
+    </h2>
     <p class="part-sub" id="resultSub"></p>
-    <div class="row" style="margin-top:4px;margin-bottom:16px;">
-      <button class="btn" id="downloadBtn" type="button" data-i18n="downloadBtn"></button>
-      <button class="btn secondary" id="newBtn" type="button" data-i18n="newBtn"></button>
+    <div class="result-actions">
+      <button id="downloadBtn" class="primary" type="button" data-i18n="downloadBtn"></button>
+      <button id="newBtn" class="btn-outline" type="button" data-i18n="newBtn"></button>
     </div>
     <div class="stat-row" id="resultStats"></div>
     <div id="reportBody"></div>
   </div>
 
-  <div class="card" id="glossaryCard" hidden>
-    <div class="card-head">
-      <p class="collapse-summary" id="glossarySummary" hidden></p>
-      <button class="collapse-toggle" id="glossaryToggle" type="button" aria-expanded="true" aria-controls="glossaryBody" aria-label="Sectie in-/uitklappen">&#9662;</button>
+  <!-- ══ ADMIN: WOORDENLIJST ════════════════════════════════════════ -->
+  <div class="ts-card" id="glossaryCard" hidden>
+    <h2 class="section-title" data-i18n="glossaryTitle">Woordenlijst beheren</h2>
+    <p class="part-sub" data-i18n-html="glossarySub"></p>
+    <p class="status" id="glossaryCurrent" data-i18n="glossaryLoading" style="margin:0 0 12px;"></p>
+    <div id="glossaryDropzone" class="drop-zone">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
+      </svg>
+      <p class="drop-hint" data-i18n-html="dropGlossary"></p>
+      <p class="fname" id="glossaryFname" hidden></p>
     </div>
-    <div id="glossaryBody">
-      <h2 class="part-title" data-i18n="glossaryTitle"></h2>
-      <p class="part-sub" data-i18n-html="glossarySub"></p>
-      <p class="status" id="glossaryCurrent" data-i18n="glossaryLoading"></p>
-      <div class="dropzone" id="glossaryDropzone">
-        <p data-i18n-html="dropGlossary"></p>
-        <p class="fname" id="glossaryFname" data-i18n="noFile"></p>
-        <input type="file" id="glossaryFileInput" accept=".xlsx,.xls,.csv" hidden>
-      </div>
-      <div class="row">
-        <button class="btn" id="glossaryUpdateBtn" disabled data-i18n="glossaryUpdateBtn"></button>
-        <button class="btn secondary" id="glossaryExportBtn" type="button" data-i18n="glossaryExportBtn"></button>
-        <span class="status" id="glossaryStatus"></span>
-      </div>
+    <input type="file" id="glossaryFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+    <div class="admin-actions">
+      <button id="glossaryUpdateBtn" class="primary" disabled data-i18n="glossaryUpdateBtn"></button>
+      <button id="glossaryExportBtn" class="btn-outline" type="button" data-i18n="glossaryExportBtn"></button>
     </div>
+    <p class="status" id="glossaryStatus"></p>
   </div>
 
-  <div class="card" id="usersCard" hidden>
-    <div class="card-head">
-      <p class="collapse-summary" id="usersSummary" hidden></p>
-      <button class="collapse-toggle" id="usersToggle" type="button" aria-expanded="true" aria-controls="usersBody" aria-label="Sectie in-/uitklappen">&#9662;</button>
+  <!-- ══ ADMIN: GEBRUIKERS ══════════════════════════════════════════ -->
+  <div class="ts-card" id="usersCard" hidden>
+    <h2 class="section-title" data-i18n="usersTitle">Gebruikers beheren</h2>
+    <p class="part-sub" data-i18n="usersSub"></p>
+    <div id="usersDropzone" class="drop-zone">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
+      </svg>
+      <p class="drop-hint" data-i18n-html="dropUsers"></p>
+      <p class="fname" id="usersFname" hidden></p>
     </div>
-    <div id="usersBody">
-      <h2 class="part-title" data-i18n="usersTitle"></h2>
-      <p class="part-sub" data-i18n="usersSub"></p>
-      <div class="dropzone" id="usersDropzone">
-        <p data-i18n-html="dropUsers"></p>
-        <p class="fname" id="usersFname" data-i18n="noFile"></p>
-        <input type="file" id="usersFileInput" accept=".xlsx,.xls,.csv" hidden>
-      </div>
-      <div class="row">
-        <button class="btn" id="usersUpdateBtn" disabled data-i18n="usersUpdateBtn"></button>
-        <span class="status" id="usersStatus"></span>
-      </div>
+    <input type="file" id="usersFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+    <div class="admin-actions">
+      <button id="usersUpdateBtn" class="primary" disabled data-i18n="usersUpdateBtn"></button>
     </div>
+    <p class="status" id="usersStatus"></p>
   </div>
+
+</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="i18n.js?v=202610111400"></script>
-<script src="app.js?v=202610111400"></script>
+<script src="i18n.js?v=202610111600"></script>
+<script src="app.js?v=202610111600"></script>
 </body>
 </html>

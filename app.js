@@ -195,24 +195,6 @@ async function tryRestoreSession() {
 // ============================================================
 // UI-hulpjes
 // ============================================================
-function setCollapsed(bodyEl, toggleEl, summaryEl, collapsed, summaryText) {
-  bodyEl.hidden = collapsed;
-  toggleEl.setAttribute('aria-expanded', String(!collapsed));
-  toggleEl.innerHTML = collapsed ? '&#9656;' : '&#9662;';
-  if (summaryEl) {
-    summaryEl.hidden = !collapsed;
-    summaryEl.closest('.card-head').classList.toggle('has-summary', collapsed);
-    if (collapsed && summaryText != null) summaryEl.textContent = summaryText;
-  }
-}
-
-function wireCollapse(prefix) {
-  const body = $(prefix + 'Body');
-  const toggle = $(prefix + 'Toggle');
-  const summary = $(prefix + 'Summary');
-  toggle.addEventListener('click', () => setCollapsed(body, toggle, summary, !body.hidden, summary.textContent));
-}
-['upload', 'glossary', 'users'].forEach(wireCollapse);
 
 function setStatus(el, msg, kind) {
   el.textContent = msg || '';
@@ -223,11 +205,11 @@ function wireDropzone(zoneId, inputId, onFile) {
   const zone = $(zoneId);
   const input = $(inputId);
   zone.addEventListener('click', () => input.click());
-  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', (e) => {
     e.preventDefault();
-    zone.classList.remove('drag');
+    zone.classList.remove('drag-over');
     if (e.dataTransfer.files.length) onFile(e.dataTransfer.files[0]);
   });
   input.addEventListener('change', (e) => {
@@ -236,16 +218,17 @@ function wireDropzone(zoneId, inputId, onFile) {
   });
 }
 
-// Bestandsnaam tonen; zonder bestand de vertaalde tekst "Geen bestand gekozen".
+// Bestandsnaam tonen in de (groene) zone; zonder bestand de uitleg tonen.
 function setFileLabel(id, name) {
   const el = $(id);
-  if (name) {
-    delete el.dataset.i18n;
-    el.textContent = name;
-  } else {
-    el.dataset.i18n = 'noFile';
-    el.textContent = t('noFile');
+  const zone = el.closest('.drop-zone');
+  if (zone) {
+    zone.classList.toggle('has-file', !!name);
+    const hint = zone.querySelector('.drop-hint');
+    if (hint) hint.hidden = !!name;
   }
+  el.hidden = !name;
+  el.textContent = name || '';
 }
 
 function esc(s) {
@@ -373,7 +356,6 @@ $('newBtn').addEventListener('click', () => {
   currentFile = null;
   setFileLabel('fname', null);
   setStatus($('fileStatus'), '');
-  setCollapsed($('uploadBody'), $('uploadToggle'), $('uploadSummary'), false);
   updateTranslateBtn();
 });
 
@@ -694,7 +676,6 @@ async function runTranslation() {
     lastResult = { fileName: currentFile.name, slideCount: slides.length, paraCount, usage, report, glossaryCheck, src, tgt, includeNotes };
     renderResult(lastResult, true);
     setStatus(status, t('done'), 'ok');
-    setCollapsed($('uploadBody'), $('uploadToggle'), $('uploadSummary'), true, uploadSummaryText());
   } catch (err) {
     if (!err.authFailure) setStatus(status, err.message || String(err), 'err');
     $('progressBar').hidden = true;
@@ -923,10 +904,6 @@ function renderResult(r, scroll) {
   if (scroll) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function uploadSummaryText() {
-  if (!lastResult) return '';
-  return `${lastResult.fileName} — ${langLabel(lastResult.src)} → ${langLabel(lastResult.tgt)}`;
-}
 
 // ============================================================
 // Admin: woordenlijst beheren
@@ -1129,7 +1106,6 @@ $('usersUpdateBtn').addEventListener('click', async () => {
     setStatus(st, msg, data.errors && data.errors.length ? 'err' : 'ok');
     parsedUserRows = [];
     if (!(data.errors && data.errors.length)) {
-      setCollapsed($('usersBody'), $('usersToggle'), $('usersSummary'), true, t('usersSummary', { msg }));
     }
   } catch (err) {
     setStatus(st, t('updateFailedMsg', { msg: err.message }), 'err');
@@ -1153,7 +1129,6 @@ function refreshUiLanguage() {
   }
   if (lastResult) {
     renderResult(lastResult, false);
-    if (!$('uploadSummary').hidden) $('uploadSummary').textContent = uploadSummaryText();
   }
   if (currentFile && !busy && !resultBlob) {
     const fileStatus = $('fileStatus');

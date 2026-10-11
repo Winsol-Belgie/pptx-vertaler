@@ -14,6 +14,8 @@ Zelfde patroon als Feedbackloop: **frontend op GitHub Pages, enkel de API
 als Worker op Cloudflare.**
 
 - `index.html` + `app.js` + `i18n.js`: statische frontend (GitHub Pages).
+  `styles.css` + `Winsol_Avatar_150px.png` zijn overgenomen van de Meeting
+  Report Generator, zodat beide tools er hetzelfde uitzien.
   `i18n.js` bevat alle teksten van de app in NL/FR/EN/DE/ES/IT. `app.js` pakt de PPTX
   **in de browser** uit (JSZip), haalt per alinea de tekst-runs eruit, zet
   de vertaling terug in exact dezelfde runs, past de taalcode aan
