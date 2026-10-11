@@ -38,6 +38,7 @@ const LANGS = {
   de: { name: 'German', variant: 'standard German' },
   en: { name: 'English', variant: 'British English (UK spelling: -ise, colour, programme, etc.)' },
   es: { name: 'Spanish', variant: 'Spanish as written in Spain' },
+  it: { name: 'Italian', variant: 'standard Italian as written in Italy' },
 };
 
 const TRANSLATE_TOOL = {

@@ -3,14 +3,18 @@
 Online tool: sleep een PowerPoint (.pptx, max. 30 MB) in de tool, kies de
 taal, en download de vertaalde presentatie. De opmaak blijft 100% behouden:
 enkel de tekst in de bestaande tekstvakken wordt vervangen. De
-Winsol-woordenlijst (NL/FR/DE/EN/ES) is daarbij bindend.
+Winsol-woordenlijst (NL/FR/DE/EN/ES/IT) is daarbij bindend.
+
+De app zelf is beschikbaar in dezelfde zes talen (keuzelijst met wereldbol,
+zoals in Winsol-Socrates; "Automatisch" volgt de taal van de browser).
 
 ## Architectuur
 
 Zelfde patroon als Feedbackloop: **frontend op GitHub Pages, enkel de API
 als Worker op Cloudflare.**
 
-- `index.html` + `app.js`: statische frontend (GitHub Pages). Pakt de PPTX
+- `index.html` + `app.js` + `i18n.js`: statische frontend (GitHub Pages).
+  `i18n.js` bevat alle teksten van de app in NL/FR/EN/DE/ES/IT. `app.js` pakt de PPTX
   **in de browser** uit (JSZip), haalt per alinea de tekst-runs eruit, zet
   de vertaling terug in exact dezelfde runs, past de taalcode aan
   (spellingcontrole) en pakt het bestand opnieuw in, in dezelfde volgorde.
@@ -129,7 +133,7 @@ admin-sectie de woordenlijst en de Users-Excel op.
 ## Beheer in de tool (admin)
 
 - **Woordenlijst beheren**: Excel met één kolom per taal (koppen
-  *Nederlands, Frans, Duits, Engels, Spaans*; volgorde vrij, lege rijen en
+  *Nederlands, Frans, Duits, Engels, Spaans, Italiaans*; volgorde vrij, lege rijen en
   extra spaties worden genegeerd). De opgeladen lijst **vervangt** de
   vorige. De tool waarschuwt bij dubbele termen met een andere vertaling.
   Met "Huidige lijst downloaden" krijg je de actieve lijst terug als Excel.
@@ -145,8 +149,10 @@ Dit is een tussenoplossing tot de SSO-koppeling.
 ## Bij een nieuwe versie
 
 - Enkel frontend gewijzigd: `git push`.
-- **`app.js` gewijzigd?** Verhoog ook het versienummer in
-  `<script src="app.js?v=...">` onderaan `index.html`.
+- **`app.js` of `i18n.js` gewijzigd?** Verhoog ook het versienummer in
+  `<script src="...?v=...">` onderaan `index.html`.
+- Nieuwe tekst in de app? Voeg de sleutel toe in **alle zes** talen in
+  `i18n.js` (ontbreekt er een, dan valt de app terug op Nederlands).
 - `worker.js` gewijzigd: `npx wrangler deploy`.
 
 ## Lokaal testen

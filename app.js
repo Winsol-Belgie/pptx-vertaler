@@ -27,9 +27,12 @@ const LANGS = {
   de: { label: 'Duits', tag: 'de-DE', code: 'DE' },
   en: { label: 'Engels (Brits)', tag: 'en-GB', code: 'EN' },
   es: { label: 'Spaans', tag: 'es-ES', code: 'ES' },
+  it: { label: 'Italiaans', tag: 'it-IT', code: 'IT' },
 };
+// Naam van een taal in de taal van de app.
+const langLabel = (code) => t('lang_' + code);
 const GLOSSARY_HEADERS = {
-  nl: 'Nederlands', fr: 'Frans', de: 'Duits', en: 'Engels', es: 'Spaans',
+  nl: 'Nederlands', fr: 'Frans', de: 'Duits', en: 'Engels', es: 'Spaans', it: 'Italiaans',
 };
 // Kolomkoppen die we in de woordenlijst-Excel herkennen.
 const HEADER_MAP = {
@@ -38,6 +41,7 @@ const HEADER_MAP = {
   duits: 'de', german: 'de', deutsch: 'de', de: 'de',
   engels: 'en', english: 'en', en: 'en',
   spaans: 'es', spanish: 'es', 'español': 'es', espanol: 'es', es: 'es',
+  italiaans: 'it', italian: 'it', italiano: 'it', italien: 'it', italienisch: 'it', it: 'it',
 };
 
 const NS_A = 'http://schemas.openxmlformats.org/drawingml/2006/main';
@@ -84,7 +88,7 @@ async function apiRequest(bodyObj) {
 
 function handleAuthFailure(status) {
   if (status === 401 || status === 403) {
-    showLogin(status === 401 ? 'Sessie verlopen — log opnieuw in.' : 'Geen toegang.');
+    showLogin(status === 401 ? t('sessionExpired') : t('noAccess'));
     return true;
   }
   return false;
@@ -96,7 +100,7 @@ function showApp(username, role) {
   appRoot.style.display = 'block';
   topbar.hidden = false;
   $('topbarUser').textContent = username;
-  $('topbarRole').textContent = role === 'admin' ? 'admin' : 'user';
+  $('topbarRole').textContent = role === 'admin' ? t('roleAdmin') : t('roleUser');
   const isAdmin = role === 'admin';
   $('glossaryCard').hidden = !isAdmin;
   $('usersCard').hidden = !isAdmin;
@@ -125,15 +129,15 @@ async function doLogin() {
   const remember = loginRemember.checked;
   loginError.textContent = '';
   if (!username || !password) {
-    loginError.textContent = 'Vul gebruikersnaam en wachtwoord in.';
+    loginError.textContent = t('loginMissing');
     return;
   }
   loginSubmitBtn.disabled = true;
-  loginSubmitBtn.textContent = 'Aanmelden…';
+  loginSubmitBtn.textContent = t('loggingIn');
   try {
-    const { ok, data } = await apiRequest({ mode: 'login', username, password, remember });
+    const { ok, status, data } = await apiRequest({ mode: 'login', username, password, remember });
     if (!ok) {
-      loginError.textContent = data.error || 'Aanmelden mislukt.';
+      loginError.textContent = status === 401 ? t('loginFailed') : (data.error || t('loginGenericFail'));
       return;
     }
     authToken = data.token;
@@ -144,10 +148,10 @@ async function doLogin() {
     }
     showApp(data.username, data.role);
   } catch {
-    loginError.textContent = 'Kon niet verbinden met de server.';
+    loginError.textContent = t('noConnection');
   } finally {
     loginSubmitBtn.disabled = false;
-    loginSubmitBtn.textContent = 'Aanmelden';
+    loginSubmitBtn.textContent = t('loginBtn');
   }
 }
 
@@ -184,7 +188,7 @@ async function tryRestoreSession() {
     if (ok) showApp(data.username, data.role);
     else showLogin();
   } catch {
-    showLogin('Kon niet verbinden met de server — probeer opnieuw in te loggen.');
+    showLogin(t('noConnectionRelogin'));
   }
 }
 
@@ -232,6 +236,18 @@ function wireDropzone(zoneId, inputId, onFile) {
   });
 }
 
+// Bestandsnaam tonen; zonder bestand de vertaalde tekst "Geen bestand gekozen".
+function setFileLabel(id, name) {
+  const el = $(id);
+  if (name) {
+    delete el.dataset.i18n;
+    el.textContent = name;
+  } else {
+    el.dataset.i18n = 'noFile';
+    el.textContent = t('noFile');
+  }
+}
+
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -241,12 +257,16 @@ function esc(s) {
 // ============================================================
 const sourceLang = $('sourceLang');
 const targetLang = $('targetLang');
-for (const [code, l] of Object.entries(LANGS)) {
-  sourceLang.add(new Option(l.label, code));
-  targetLang.add(new Option(l.label, code));
+function fillLangSelects() {
+  const keep = [sourceLang.value || 'nl', targetLang.value || 'en'];
+  for (const sel of [sourceLang, targetLang]) {
+    sel.innerHTML = '';
+    for (const code of Object.keys(LANGS)) sel.add(new Option(langLabel(code), code));
+  }
+  sourceLang.value = keep[0];
+  targetLang.value = keep[1];
 }
-sourceLang.value = 'nl';
-targetLang.value = 'en';
+fillLangSelects();
 let glossaryInfo = null;
 
 async function loadGlossaryInfo() {
@@ -254,11 +274,11 @@ async function loadGlossaryInfo() {
   try {
     const { ok, status, data } = await apiRequest({ mode: 'glossary_info' });
     if (handleAuthFailure(status)) return;
-    if (!ok) throw new Error(data.error || 'onbekende fout');
+    if (!ok) throw new Error(data.error || t('unknownError'));
     glossaryInfo = data;
   } catch (err) {
     glossaryInfo = null;
-    setStatus(el, 'Woordenlijst-info niet beschikbaar: ' + err.message, 'err');
+    setStatus(el, t('glossaryInfoUnavailable', { msg: err.message }), 'err');
     return;
   }
   updateGlossaryInfoText();
@@ -268,22 +288,24 @@ async function loadGlossaryInfo() {
 function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return isNaN(d) ? '' : d.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+  return isNaN(d) ? '' : d.toLocaleDateString(currentUiLang() + '-BE', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function updateGlossaryInfoText() {
   const el = $('glossaryInfo');
   if (!glossaryInfo || !glossaryInfo.available) {
-    setStatus(el, 'Let op: er is nog geen woordenlijst opgeladen — er wordt vertaald zonder vaste terminologie.', 'err');
+    setStatus(el, t('glossaryNone'), 'err');
     return;
   }
   const langs = glossaryInfo.languages || [];
   const missing = [sourceLang.value, targetLang.value].filter((l) => !langs.includes(l));
   if (missing.length) {
-    setStatus(el, `Let op: de woordenlijst bevat geen ${missing.map((l) => LANGS[l].label).join(' / ')} — deze vertaling gebeurt zonder vaste terminologie.`, 'err');
+    setStatus(el, t('glossaryMissingLang', { langs: missing.map(langLabel).join(' / ') }), 'err');
     return;
   }
-  setStatus(el, `Woordenlijst: ${glossaryInfo.terms} termen${glossaryInfo.updatedAt ? ', bijgewerkt op ' + formatDate(glossaryInfo.updatedAt) : ''}.`);
+  setStatus(el, glossaryInfo.updatedAt
+    ? t('glossaryInfoDate', { n: glossaryInfo.terms, date: formatDate(glossaryInfo.updatedAt) })
+    : t('glossaryInfo', { n: glossaryInfo.terms }));
 }
 sourceLang.addEventListener('change', () => { updateGlossaryInfoText(); updateTranslateBtn(); });
 targetLang.addEventListener('change', () => { updateGlossaryInfoText(); updateTranslateBtn(); });
@@ -293,6 +315,7 @@ targetLang.addEventListener('change', () => { updateGlossaryInfoText(); updateTr
 // ============================================================
 let currentFile = null;
 let resultBlob = null;
+let lastResult = null;
 let resultName = '';
 let busy = false;
 
@@ -302,21 +325,21 @@ function handlePptxFile(file) {
   const fileStatus = $('fileStatus');
   resetTranslation();
   currentFile = null;
-  $('fname').textContent = file.name;
+  setFileLabel('fname', file.name);
   if (!/\.pptx$/i.test(file.name)) {
-    setStatus(fileStatus, 'Enkel .pptx-bestanden worden ondersteund (geen .ppt, .pdf of .key). Sla oudere bestanden eerst op als .pptx.', 'err');
+    setStatus(fileStatus, t('onlyPptx'), 'err');
     updateTranslateBtn();
     return;
   }
   if (file.size > MAX_FILE_MB * 1024 * 1024) {
-    setStatus(fileStatus, `Bestand is ${(file.size / 1048576).toFixed(1)} MB — maximaal ${MAX_FILE_MB} MB toegelaten.`, 'err');
+    setStatus(fileStatus, t('fileTooBig', { size: (file.size / 1048576).toFixed(1), max: MAX_FILE_MB }), 'err');
     updateTranslateBtn();
     return;
   }
   currentFile = file;
-  setStatus(fileStatus, `${(file.size / 1048576).toFixed(1)} MB — klaar om te vertalen.`);
+  setStatus(fileStatus, t('fileReady', { size: (file.size / 1048576).toFixed(1) }));
   // Taal uit de bestandsnaam afleiden (bv. "..._NL.pptx").
-  const m = file.name.match(/[_\- ](NL|FR|DE|EN|ES)(?=[_\- .])/i);
+  const m = file.name.match(/[_\- ](NL|FR|DE|EN|ES|IT)(?=[_\- .])/i);
   if (m) {
     const code = m[1].toLowerCase();
     sourceLang.value = code;
@@ -330,12 +353,13 @@ function updateTranslateBtn() {
   const btn = $('translateBtn');
   const same = sourceLang.value === targetLang.value;
   btn.disabled = busy || !currentFile || same;
-  if (same && currentFile) setStatus($('translateStatus'), 'Bron- en doeltaal zijn dezelfde.', 'err');
+  if (same && currentFile) setStatus($('translateStatus'), t('sameLang'), 'err');
   else if (!busy) setStatus($('translateStatus'), '');
 }
 
 function resetTranslation() {
   resultBlob = null;
+  lastResult = null;
   resultName = '';
   $('resultCard').style.display = 'none';
   $('reportBody').innerHTML = '';
@@ -347,7 +371,7 @@ function resetTranslation() {
 $('newBtn').addEventListener('click', () => {
   resetTranslation();
   currentFile = null;
-  $('fname').textContent = 'Geen bestand gekozen';
+  setFileLabel('fname', null);
   setStatus($('fileStatus'), '');
   setCollapsed($('uploadBody'), $('uploadToggle'), $('uploadSummary'), false);
   updateTranslateBtn();
@@ -371,7 +395,7 @@ $('downloadBtn').addEventListener('click', () => {
 
 function parseXml(str) {
   const doc = new DOMParser().parseFromString(str, 'application/xml');
-  if (doc.getElementsByTagName('parsererror').length) throw new Error('XML kon niet gelezen worden.');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error(t('xmlError'));
   return doc;
 }
 
@@ -505,9 +529,9 @@ async function runTranslation() {
 
   try {
     // --- 1. Uitpakken en alinea's verzamelen ---
-    setStatus(status, 'Presentatie uitpakken…');
+    setStatus(status, t('unpacking'));
     const zip = await JSZip.loadAsync(currentFile);
-    if (!zip.file('ppt/presentation.xml')) throw new Error('Dit lijkt geen geldige PowerPoint-presentatie.');
+    if (!zip.file('ppt/presentation.xml')) throw new Error(t('invalidPptx'));
     const slides = await mapSlides(zip);
 
     // Onderdelen die we behandelen, met het dianummer voor het rapport.
@@ -560,15 +584,15 @@ async function runTranslation() {
       }
     }
 
-    if (!unique.size) throw new Error('Geen vertaalbare tekst gevonden in deze presentatie.');
+    if (!unique.size) throw new Error(t('noText'));
     if (totalChars > MAX_TOTAL_CHARS) {
-      throw new Error(`Deze presentatie bevat ${totalChars.toLocaleString('nl-BE')} tekens tekst — maximaal ${MAX_TOTAL_CHARS.toLocaleString('nl-BE')} toegelaten.`);
+      throw new Error(t('tooMuchText', { n: totalChars.toLocaleString('nl-BE'), max: MAX_TOTAL_CHARS.toLocaleString('nl-BE') }));
     }
 
     // --- 2. In delen naar de Worker sturen ---
     const items = [...unique.values()].sort((a, b) => (a.slide ?? 9999) - (b.slide ?? 9999));
     const batches = makeBatches(items);
-    setStatus(status, `0/${batches.length} delen vertaald…`);
+    setStatus(status, t('batchesDone', { done: 0, total: batches.length }));
     const results = new Map(); // id -> segs
     const usage = { inputTokens: 0, outputTokens: 0 };
     const glossaryTerms = new Map(); // src -> tgt
@@ -595,16 +619,16 @@ async function runTranslation() {
       for (const g of r.glossaryTerms || []) glossaryTerms.set(g.src, g.tgt);
       done++;
       setProgress(done, batches.length);
-      setStatus(status, `${done}/${batches.length} delen vertaald…`);
+      setStatus(status, t('batchesDone', { done, total: batches.length }));
     };
     await runPool(batches, runBatch, PARALLEL_CALLS);
-    if (failedBatches === batches.length) throw lastBatchError || new Error('Vertalen mislukt.');
+    if (failedBatches === batches.length) throw lastBatchError || new Error(t('translateFailed'));
 
     // Items met een ontbrekende of foute vertaling (verkeerd aantal
     // segmenten) krijgen één tweede kans, in kleine delen.
     const retry = items.filter((it) => !validTranslation(it, results.get(it.id)));
     if (retry.length) {
-      setStatus(status, `${retry.length} alinea's opnieuw vertalen…`);
+      setStatus(status, t('retrying', { n: retry.length }));
       const rb = makeBatches(retry, 15);
       await runPool(rb, async (batch) => {
         try {
@@ -624,7 +648,7 @@ async function runTranslation() {
     }
 
     // --- 3. Terugzetten ---
-    setStatus(status, 'Vertaling terugzetten in de presentatie…');
+    setStatus(status, t('writingBack'));
     const report = { simplified: [], untranslated: [], longer: [], symbols: [] };
     const tgtTag = LANGS[tgt].tag;
 
@@ -653,7 +677,7 @@ async function runTranslation() {
     }
 
     // --- 4. Opnieuw inpakken (zelfde volgorde, enkel gewijzigde onderdelen) ---
-    setStatus(status, 'Presentatie inpakken…');
+    setStatus(status, t('packing'));
     for (const [path, entry] of docs) {
       if (entry.changed) zip.file(path, serializeXml(entry.doc), { createFolders: false });
     }
@@ -667,17 +691,17 @@ async function runTranslation() {
 
     // --- 5. Rapport ---
     const glossaryCheck = checkGlossary(items, results, glossaryTerms, report);
-    renderResult({ slides, items, paraCount, usage, report, glossaryTerms, glossaryCheck, src, tgt, includeNotes });
-    setStatus(status, 'Klaar.', 'ok');
-    setCollapsed($('uploadBody'), $('uploadToggle'), $('uploadSummary'), true,
-      `${currentFile.name} — ${LANGS[src].label} → ${LANGS[tgt].label}`);
+    lastResult = { fileName: currentFile.name, slideCount: slides.length, paraCount, usage, report, glossaryCheck, src, tgt, includeNotes };
+    renderResult(lastResult, true);
+    setStatus(status, t('done'), 'ok');
+    setCollapsed($('uploadBody'), $('uploadToggle'), $('uploadSummary'), true, uploadSummaryText());
   } catch (err) {
     if (!err.authFailure) setStatus(status, err.message || String(err), 'err');
     $('progressBar').hidden = true;
   } finally {
     busy = false;
     updateTranslateBtn();
-    if (resultBlob) setStatus(status, 'Klaar.', 'ok');
+    if (resultBlob) setStatus(status, t('done'), 'ok');
   }
 }
 
@@ -730,11 +754,11 @@ async function translateBatch(batch, src, tgt) {
     try {
       res = await apiRequest(payload);
     } catch {
-      lastErr = new Error('Kon niet verbinden met de server.');
+      lastErr = new Error(t('noConnection'));
       continue;
     }
     if (handleAuthFailure(res.status)) {
-      const e = new Error('Sessie verlopen.');
+      const e = new Error(t('sessionExpired'));
       e.authFailure = true;
       throw e;
     }
@@ -745,7 +769,7 @@ async function translateBatch(batch, src, tgt) {
         glossaryTerms: res.data.glossaryTerms || [],
       };
     }
-    lastErr = new Error(res.data.error || `Vertalen mislukt (${res.status}).`);
+    lastErr = new Error(res.data.error || t('translateFailedCode', { code: res.status }));
     if (!res.data.retryable) break;
   }
   throw lastErr;
@@ -846,60 +870,62 @@ function checkGlossary(items, results, terms, report) {
   return applied;
 }
 
-function renderResult(r) {
+function renderResult(r, scroll) {
   const card = $('resultCard');
-  const slideCount = r.slides.length;
-  $('resultSub').textContent = `${currentFile.name} — ${LANGS[r.src].label} → ${LANGS[r.tgt].label}. Opmaak, afbeeldingen en animaties zijn ongewijzigd; enkel de tekst en de taalinstelling zijn aangepast.`;
+  $('resultSub').textContent = t('resultSub', { file: r.fileName, src: langLabel(r.src), tgt: langLabel(r.tgt) });
   $('resultStats').innerHTML = [
-    [slideCount, "dia's"],
-    [r.paraCount, "alinea's vertaald"],
-    [r.glossaryCheck.length, 'woordenlijst-termen'],
-    [Math.round((r.usage.inputTokens + r.usage.outputTokens) / 1000) + 'K', 'tokens gebruikt'],
+    [r.slideCount, t('statSlides')],
+    [r.paraCount, t('statParas')],
+    [r.glossaryCheck.length, t('statTerms')],
+    [Math.round((r.usage.inputTokens + r.usage.outputTokens) / 1000) + 'K', t('statTokens')],
   ].map(([n, l]) => `<div class="stat"><b>${esc(n)}</b><span>${esc(l)}</span></div>`).join('');
 
   const rep = r.report;
   // Symbool-tekens (Wingdings-pijltjes) zijn buiten PowerPoint onleesbaar.
-  const show = (t) => esc(String(t).replace(PUA_RE, '').replace(/\s+/g, ' ').trim());
-  const slideLbl = (s) => (s ? `dia ${s}` : 'lay-out');
+  const show = (txt) => esc(String(txt).replace(PUA_RE, '').replace(/\s+/g, ' ').trim());
+  const slideLbl = (n) => esc(n ? t('slideN', { n }) : t('layoutLbl'));
+  const title = (key) => `<h3 class="part-subtitle">${esc(t(key))}</h3>`;
+  const sub = (key) => `<p class="part-sub">${esc(t(key))}</p>`;
   const list = (rows, render) => (rows.length
     ? `<ul class="report-list">${rows.map(render).join('')}</ul>`
-    : '<p class="report-empty">Geen.</p>');
+    : `<p class="report-empty">${esc(t('none'))}</p>`);
   let html = '';
 
-  html += '<h3 class="part-subtitle">Nakijken: tekst die merkbaar langer werd</h3>';
-  html += '<p class="part-sub">De opmaak blijft identiek, dus langere tekst kan over een kader of afbeelding lopen. Kijk deze dia\'s even na.</p>';
+  html += title('repLongerTitle') + sub('repLongerSub');
   html += list(rep.longer, (x) => `<li><span class="ranked-cat">${slideLbl(x.slide)}</span><span class="txt">${show(x.after)}<div class="orig">${show(x.before)}</div></span><span class="pill issue">+${Math.round((x.after.length / x.before.length - 1) * 100)}%</span></li>`);
 
   if (rep.glossaryMissing && rep.glossaryMissing.length) {
-    html += '<h3 class="part-subtitle">Nakijken: woordenlijst-term mogelijk niet gebruikt</h3>';
-    html += list(rep.glossaryMissing, (x) => `<li><span class="ranked-cat">${slideLbl(x.slide)}</span><span class="txt">${show(x.after)}<div class="orig">verwacht: ${esc(x.src)} → ${esc(x.tgt)}</div></span><span class="pill issue">term</span></li>`);
+    html += title('repGlossTitle');
+    html += list(rep.glossaryMissing, (x) => `<li><span class="ranked-cat">${slideLbl(x.slide)}</span><span class="txt">${show(x.after)}<div class="orig">${esc(t('repExpected', { src: x.src, tgt: x.tgt }))}</div></span><span class="pill issue">${esc(t('pillTerm'))}</span></li>`);
   }
 
   if (rep.simplified.length) {
-    html += '<h3 class="part-subtitle">Opmaak binnen de alinea vereenvoudigd</h3>';
-    html += '<p class="part-sub">Bij deze alinea\'s kon de opmaak van losse woorden (bv. één vet woord) niet overgenomen worden. De tekst is wel vertaald.</p>';
+    html += title('repSimplTitle') + sub('repSimplSub');
     html += list(rep.simplified, (x) => `<li><span class="ranked-cat">${slideLbl(x.slide)}</span><span class="txt">${show(x.after)}<div class="orig">${show(x.before)}</div></span></li>`);
   }
 
   const notDone = rep.untranslated.concat(rep.symbols);
   if (notDone.length) {
-    html += '<h3 class="part-subtitle">Niet vertaald</h3>';
-    html += '<p class="part-sub">Deze tekst bleef in de oorspronkelijke taal (geen bruikbaar antwoord van de AI, of een symbool zou verloren gaan).</p>';
-    html += list(notDone, (x) => `<li><span class="ranked-cat">${slideLbl(x.slide)}</span><span class="txt">${show(x.before)}</span><span class="pill negative">origineel</span></li>`);
+    html += title('repNotTitle') + sub('repNotSub');
+    html += list(notDone, (x) => `<li><span class="ranked-cat">${slideLbl(x.slide)}</span><span class="txt">${show(x.before)}</span><span class="pill negative">${esc(t('pillOriginal'))}</span></li>`);
   }
 
   if (r.glossaryCheck.length) {
-    html += '<h3 class="part-subtitle">Gebruikte woordenlijst-termen</h3>';
+    html += title('repTermsTitle');
     html += '<div class="term-chips">' + r.glossaryCheck
       .map((g) => `<span class="term-chip">${esc(g.src)} → ${esc(g.tgt)}</span>`).join('') + '</div>';
   }
 
-  html += '<h3 class="part-subtitle">Niet meegenomen</h3>';
-  html += `<p class="part-sub">Tekst in afbeeldingen en schermafbeeldingen, grafiekdata${r.includeNotes ? '' : ', sprekersnotities'} en verborgen voorbeeldtekst in de lay-outs.</p>`;
+  html += title('repSkippedTitle') + sub(r.includeNotes ? 'repSkippedNotes' : 'repSkippedNoNotes');
 
   $('reportBody').innerHTML = html;
   card.style.display = 'block';
-  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (scroll) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function uploadSummaryText() {
+  if (!lastResult) return '';
+  return `${lastResult.fileName} — ${langLabel(lastResult.src)} → ${langLabel(lastResult.tgt)}`;
 }
 
 // ============================================================
@@ -911,11 +937,13 @@ wireDropzone('glossaryDropzone', 'glossaryFileInput', handleGlossaryFile);
 function updateGlossaryCurrentText() {
   const el = $('glossaryCurrent');
   if (!glossaryInfo || !glossaryInfo.available) {
-    setStatus(el, 'Nog geen woordenlijst opgeladen.', 'err');
+    setStatus(el, t('glossaryNoneAdmin'), 'err');
     return;
   }
-  const langs = (glossaryInfo.languages || []).map((l) => GLOSSARY_HEADERS[l] || l).join(', ');
-  setStatus(el, `Huidige lijst: ${glossaryInfo.terms} termen (${langs})${glossaryInfo.fileName ? ' uit "' + glossaryInfo.fileName + '"' : ''}${glossaryInfo.updatedAt ? ', opgeladen op ' + formatDate(glossaryInfo.updatedAt) : ''}.`);
+  const langs = (glossaryInfo.languages || []).map(langLabel).join(', ');
+  setStatus(el, glossaryInfo.fileName && glossaryInfo.updatedAt
+    ? t('glossaryCurrentFile', { n: glossaryInfo.terms, langs, file: glossaryInfo.fileName, date: formatDate(glossaryInfo.updatedAt) })
+    : t('glossaryCurrent', { n: glossaryInfo.terms, langs }));
 }
 
 function readWorkbook(file) {
@@ -925,20 +953,20 @@ function readWorkbook(file) {
       try {
         resolve(XLSX.read(e.target.result, { type: 'array' }));
       } catch {
-        reject(new Error('Kon het Excel-bestand niet lezen.'));
+        reject(new Error(t('excelReadFail')));
       }
     };
-    reader.onerror = () => reject(new Error('Kon het bestand niet lezen.'));
+    reader.onerror = () => reject(new Error(t('fileReadFail')));
     reader.readAsArrayBuffer(file);
   });
 }
 
 async function handleGlossaryFile(file) {
   const st = $('glossaryStatus');
-  $('glossaryFname').textContent = file.name;
+  setFileLabel('glossaryFname', file.name);
   $('glossaryUpdateBtn').disabled = true;
   parsedGlossary = null;
-  setStatus(st, 'Bestand inlezen...');
+  setStatus(st, t('reading'));
   let wb;
   try {
     wb = await readWorkbook(file);
@@ -964,7 +992,7 @@ async function handleGlossaryFile(file) {
     }
   }
   if (headerIdx < 0) {
-    setStatus(st, 'Geen koprij gevonden — verwacht kolommen zoals Nederlands, Frans, Duits, Engels, Spaans.', 'err');
+    setStatus(st, t('noHeader'), 'err');
     return;
   }
   const languages = Object.keys(LANGS).filter((l) => l in colMap);
@@ -973,7 +1001,7 @@ async function handleGlossaryFile(file) {
     .map((r) => Object.fromEntries(languages.map((l) => [l, clean(r[colMap[l]])])))
     .filter((o) => languages.filter((l) => o[l]).length >= 2);
   if (!data.length) {
-    setStatus(st, 'Geen bruikbare rijen gevonden onder de koprij.', 'err');
+    setStatus(st, t('noRows'), 'err');
     return;
   }
   // Waarschuwingen: dubbele termen met verschillende vertaling, lege cellen.
@@ -985,15 +1013,19 @@ async function handleGlossaryFile(file) {
     if (byKey.has(k)) {
       const prev = byKey.get(k);
       const diff = languages.filter((l) => prev[l] && o[l] && prev[l] !== o[l]);
-      if (diff.length) warnings.push(`"${o[languages[0]]}" staat er meer dan eens in met een andere vertaling (${diff.map((l) => GLOSSARY_HEADERS[l]).join(', ')})`);
+      if (diff.length) warnings.push(t('dupWarn', { term: o[languages[0]], langs: diff.map(langLabel).join(', ') }));
     } else {
       byKey.set(k, o);
     }
   }
   const empty = data.reduce((n, o) => n + languages.filter((l) => !o[l]).length, 0);
-  if (empty) warnings.push(`${empty} lege cel(len) — die talen worden voor die term overgeslagen`);
+  if (empty) warnings.push(t('emptyWarn', { n: empty }));
   parsedGlossary = { languages, rows: data, fileName: file.name };
-  setStatus(st, `${data.length} termen ingelezen (${languages.map((l) => GLOSSARY_HEADERS[l]).join(', ')}).${warnings.length ? ' Let op: ' + warnings.join('; ') + '.' : ''} Klik op "Woordenlijst bijwerken" om te bevestigen.`, warnings.length ? 'err' : '');
+  setStatus(st, [
+    t('glossaryParsed', { n: data.length, langs: languages.map(langLabel).join(', ') }),
+    warnings.length ? t('warnPrefix', { list: warnings.join('; ') }) : '',
+    t('confirmClick', { btn: t('glossaryUpdateBtn') }),
+  ].filter(Boolean).join(' '), warnings.length ? 'err' : '');
   $('glossaryUpdateBtn').disabled = false;
 }
 
@@ -1001,20 +1033,20 @@ $('glossaryUpdateBtn').addEventListener('click', async () => {
   if (!parsedGlossary) return;
   const st = $('glossaryStatus');
   $('glossaryUpdateBtn').disabled = true;
-  setStatus(st, 'Bezig met bijwerken...');
+  setStatus(st, t('updating'));
   try {
     const { ok, status, data } = await apiRequest({ mode: 'glossary_put', ...parsedGlossary });
     if (handleAuthFailure(status)) return;
     if (!ok) {
-      setStatus(st, data.error || 'Bijwerken mislukt.', 'err');
+      setStatus(st, data.error || t('updateFailed'), 'err');
       $('glossaryUpdateBtn').disabled = false;
       return;
     }
-    setStatus(st, `${data.bewaard} termen bewaard.`, 'ok');
+    setStatus(st, t('termsSaved', { n: data.bewaard }), 'ok');
     parsedGlossary = null;
     await loadGlossaryInfo();
   } catch (err) {
-    setStatus(st, 'Bijwerken mislukt: ' + err.message, 'err');
+    setStatus(st, t('updateFailedMsg', { msg: err.message }), 'err');
     $('glossaryUpdateBtn').disabled = false;
   }
 });
@@ -1024,10 +1056,10 @@ $('glossaryExportBtn').addEventListener('click', async () => {
   try {
     const { ok, status, data } = await apiRequest({ mode: 'glossary_get' });
     if (handleAuthFailure(status)) return;
-    if (!ok) throw new Error(data.error || 'onbekende fout');
+    if (!ok) throw new Error(data.error || t('unknownError'));
     const g = data.glossary;
     if (!g || !g.rows || !g.rows.length) {
-      setStatus(st, 'Er is nog geen woordenlijst opgeladen.', 'err');
+      setStatus(st, t('noGlossaryYet'), 'err');
       return;
     }
     const aoa = [g.languages.map((l) => GLOSSARY_HEADERS[l] || l)]
@@ -1038,7 +1070,7 @@ $('glossaryExportBtn').addEventListener('click', async () => {
     XLSX.utils.book_append_sheet(wb, ws, 'Woordenlijst');
     XLSX.writeFile(wb, 'Woordenlijst_huidig.xlsx');
   } catch (err) {
-    setStatus(st, 'Downloaden mislukt: ' + err.message, 'err');
+    setStatus(st, t('downloadFailed', { msg: err.message }), 'err');
   }
 });
 
@@ -1050,8 +1082,8 @@ wireDropzone('usersDropzone', 'usersFileInput', handleUsersFile);
 
 async function handleUsersFile(file) {
   const st = $('usersStatus');
-  $('usersFname').textContent = file.name;
-  setStatus(st, 'Bestand inlezen...');
+  setFileLabel('usersFname', file.name);
+  setStatus(st, t('reading'));
   $('usersUpdateBtn').disabled = true;
   parsedUserRows = [];
   let wb;
@@ -1071,11 +1103,11 @@ async function handleUsersFile(file) {
     })
     .filter((r) => r.username || r.password);
   if (!rows.length) {
-    setStatus(st, 'Geen bruikbare rijen gevonden — verwacht kolommen USER, PW en ROLE.', 'err');
+    setStatus(st, t('usersNoRows'), 'err');
     return;
   }
   parsedUserRows = rows;
-  setStatus(st, `${rows.length} rijen ingelezen uit "${sheetName}". Klik op "Users bijwerken" om te bevestigen.`);
+  setStatus(st, t('usersParsed', { n: rows.length, sheet: sheetName }) + ' ' + t('confirmClick', { btn: t('usersUpdateBtn') }));
   $('usersUpdateBtn').disabled = false;
 }
 
@@ -1083,26 +1115,60 @@ $('usersUpdateBtn').addEventListener('click', async () => {
   if (!parsedUserRows.length) return;
   const st = $('usersStatus');
   $('usersUpdateBtn').disabled = true;
-  setStatus(st, 'Bezig met bijwerken...');
+  setStatus(st, t('updating'));
   try {
     const { ok, status, data } = await apiRequest({ mode: 'admin_upsert_users', users: parsedUserRows });
     if (handleAuthFailure(status)) return;
     if (!ok) {
-      setStatus(st, (data && data.error) || 'Bijwerken mislukt.', 'err');
+      setStatus(st, (data && data.error) || t('updateFailed'), 'err');
       $('usersUpdateBtn').disabled = false;
       return;
     }
-    let msg = `${data.updated} van ${data.total} gebruikers bijgewerkt.`;
-    if (data.errors && data.errors.length) msg += ` Fouten: ${data.errors.join('; ')}`;
+    let msg = t('usersUpdated', { u: data.updated, t: data.total });
+    if (data.errors && data.errors.length) msg += ' ' + t('errorsPrefix', { list: data.errors.join('; ') });
     setStatus(st, msg, data.errors && data.errors.length ? 'err' : 'ok');
     parsedUserRows = [];
     if (!(data.errors && data.errors.length)) {
-      setCollapsed($('usersBody'), $('usersToggle'), $('usersSummary'), true, `Gebruikers — ${msg}`);
+      setCollapsed($('usersBody'), $('usersToggle'), $('usersSummary'), true, t('usersSummary', { msg }));
     }
   } catch (err) {
-    setStatus(st, 'Bijwerken mislukt: ' + err.message, 'err');
+    setStatus(st, t('updateFailedMsg', { msg: err.message }), 'err');
     $('usersUpdateBtn').disabled = false;
   }
 });
 
+// ============================================================
+// Taal van de app (zoals Winsol-Socrates)
+// ============================================================
+function refreshUiLanguage() {
+  applyI18n();
+  fillUiLangSelect($('uiLangLogin'));
+  fillUiLangSelect($('uiLangApp'));
+  fillLangSelects();
+  $('loginError').textContent = '';
+  if (authRole) {
+    $('topbarRole').textContent = authRole === 'admin' ? t('roleAdmin') : t('roleUser');
+    if (glossaryInfo) updateGlossaryInfoText();
+    if (authRole === 'admin' && glossaryInfo) updateGlossaryCurrentText();
+  }
+  if (lastResult) {
+    renderResult(lastResult, false);
+    if (!$('uploadSummary').hidden) $('uploadSummary').textContent = uploadSummaryText();
+  }
+  if (currentFile && !busy && !resultBlob) {
+    const fileStatus = $('fileStatus');
+    if (!fileStatus.classList.contains('err')) setStatus(fileStatus, t('fileReady', { size: (currentFile.size / 1048576).toFixed(1) }));
+  }
+}
+
+for (const id of ['uiLangLogin', 'uiLangApp']) {
+  $(id).addEventListener('change', (e) => {
+    const v = e.target.value;
+    uiLangOverride = v;
+    saveUiLangSetting(v);
+    refreshUiLanguage();
+  });
+}
+
+refreshUiLanguage();
 tryRestoreSession();

@@ -92,39 +92,59 @@ h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18p
 .topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:-8px;padding-bottom:16px;font-size:13px;color:var(--ink-faint);}
 .topbar b{color:var(--ink);}
 .topbar .btn.secondary{padding:6px 14px;font-size:12px;border-radius:8px;}
+
+/* --- Taalkeuze van de app (zoals Winsol-Socrates) --- */
+.language-box{display:flex;align-items:center;gap:8px;}
+.lang-icon{width:20px;height:20px;fill:var(--ink-faint);flex-shrink:0;}
+.language-wrapper{position:relative;display:inline-block;}
+.language-wrapper select{appearance:none;-webkit-appearance:none;font-family:inherit;font-size:13px;padding:6px 32px 6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper-2);color:var(--ink-soft);height:32px;cursor:pointer;}
+.language-wrapper select:hover{border-color:var(--ink-faint);}
+.language-wrapper select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.language-wrapper::after{content:"";position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--ink-faint);}
+.login-lang{justify-content:center;margin-top:18px;}
+.topbar{flex-wrap:wrap;}
+.topbar .language-box{margin-right:auto;}
 </style>
 </head>
 <body>
 
 <div id="loginScreen">
   <div class="login-card">
-    <h1>Presentatievertaler</h1>
-    <p class="login-sub">Log in om verder te gaan.</p>
+    <h1 data-i18n="appTitle">Presentatievertaler</h1>
+    <p class="login-sub" data-i18n="loginSub">Log in om verder te gaan.</p>
     <div class="login-form">
-      <input type="text" id="loginUsername" placeholder="Gebruikersnaam" autocomplete="username">
+      <input type="text" id="loginUsername" data-i18n-placeholder="username" placeholder="Gebruikersnaam" autocomplete="username">
       <div class="login-pw-wrap">
-        <input type="password" id="loginPassword" placeholder="Wachtwoord" autocomplete="current-password">
-        <button type="button" id="loginPwToggle" class="login-pw-eye" title="Wachtwoord tonen/verbergen" tabindex="-1">&#128065;</button>
+        <input type="password" id="loginPassword" data-i18n-placeholder="password" placeholder="Wachtwoord" autocomplete="current-password">
+        <button type="button" id="loginPwToggle" class="login-pw-eye" data-i18n-title="pwToggle" title="Wachtwoord tonen/verbergen" tabindex="-1">&#128065;</button>
       </div>
       <label class="login-remember">
         <input type="checkbox" id="loginRemember">
-        <span>Blijf aangemeld</span>
+        <span data-i18n="remember">Blijf aangemeld</span>
       </label>
-      <button class="btn login-btn" id="loginSubmitBtn" type="button">Aanmelden</button>
+      <button class="btn login-btn" id="loginSubmitBtn" type="button" data-i18n="loginBtn">Aanmelden</button>
       <div class="login-error" id="loginError"></div>
+    </div>
+    <div class="language-box login-lang">
+      <svg class="lang-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm7.93 9h-3.05a15.1 15.1 0 00-1.12-5.18 8.03 8.03 0 014.17 5.18zM12 4c.88 1.14 1.57 2.71 1.97 4.5H10.03C10.43 6.71 11.12 5.14 12 4zm-3.76.82A15.1 15.1 0 006.12 11H3.07a8.03 8.03 0 015.17-6.18zM3.07 13h3.05a15.1 15.1 0 001.12 5.18A8.03 8.03 0 013.07 13zm8.93 7c-.88-1.14-1.57-2.71-1.97-4.5h3.94c-.4 1.79-1.09 3.36-1.97 4.5zm3.76-.82a15.1 15.1 0 001.12-5.18h3.05a8.03 8.03 0 01-4.17 5.18z"/></svg>
+      <div class="language-wrapper"><select id="uiLangLogin" class="ui-lang" data-i18n-title="uiLanguage"></select></div>
     </div>
   </div>
 </div>
 
 <div class="wrap" id="appRoot">
   <div class="topbar" id="topbar" hidden>
-    <span>Ingelogd als <b id="topbarUser"></b> (<span id="topbarRole"></span>)</span>
-    <button class="btn secondary" id="logoutBtn" type="button">Uitloggen</button>
+    <div class="language-box">
+      <svg class="lang-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm7.93 9h-3.05a15.1 15.1 0 00-1.12-5.18 8.03 8.03 0 014.17 5.18zM12 4c.88 1.14 1.57 2.71 1.97 4.5H10.03C10.43 6.71 11.12 5.14 12 4zm-3.76.82A15.1 15.1 0 006.12 11H3.07a8.03 8.03 0 015.17-6.18zM3.07 13h3.05a15.1 15.1 0 001.12 5.18A8.03 8.03 0 013.07 13zm8.93 7c-.88-1.14-1.57-2.71-1.97-4.5h3.94c-.4 1.79-1.09 3.36-1.97 4.5zm3.76-.82a15.1 15.1 0 001.12-5.18h3.05a8.03 8.03 0 01-4.17 5.18z"/></svg>
+      <div class="language-wrapper"><select id="uiLangApp" class="ui-lang" data-i18n-title="uiLanguage"></select></div>
+    </div>
+    <span class="topbar-user"><span data-i18n="loggedInAs">Ingelogd als</span> <b id="topbarUser"></b> (<span id="topbarRole"></span>)</span>
+    <button class="btn secondary" id="logoutBtn" type="button" data-i18n="logout">Uitloggen</button>
   </div>
 
   <header class="hero">
-    <h1>Presentatievertaler</h1>
-    <p>Sleep een PowerPoint in de tool, kies de taal en download de vertaalde versie. De opmaak blijft volledig behouden: enkel de tekst wordt vervangen, met de Winsol-woordenlijst als vaste terminologie.</p>
+    <h1 data-i18n="appTitle">Presentatievertaler</h1>
+    <p data-i18n="heroText"></p>
   </header>
 
   <div class="card" id="uploadCard">
@@ -133,36 +153,36 @@ h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18p
       <button class="collapse-toggle" id="uploadToggle" type="button" aria-expanded="true" aria-controls="uploadBody" aria-label="Sectie in-/uitklappen">&#9662;</button>
     </div>
     <div id="uploadBody">
-      <h2 class="part-title"><span class="step-label">Stap 1</span>Presentatie</h2>
-      <p class="part-sub">Enkel .pptx-bestanden, maximaal 30 MB.</p>
+      <h2 class="part-title"><span class="step-label" data-i18n="step" data-i18n-vars='{"n":1}'></span><span data-i18n="stepPresentation"></span></h2>
+      <p class="part-sub" data-i18n="fileHint" data-i18n-vars='{"mb":30}'></p>
       <div class="dropzone" id="dropzone">
-        <p><strong>Sleep je PowerPoint hierheen</strong> of klik om te bladeren</p>
-        <p class="fname" id="fname">Geen bestand gekozen</p>
+        <p data-i18n-html="dropPptx"></p>
+        <p class="fname" id="fname" data-i18n="noFile"></p>
         <input type="file" id="fileInput" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden>
       </div>
       <p class="status" id="fileStatus" style="margin-top:10px;"></p>
 
-      <h2 class="part-title" style="margin-top:22px;"><span class="step-label">Stap 2</span>Taal</h2>
+      <h2 class="part-title" style="margin-top:22px;"><span class="step-label" data-i18n="step" data-i18n-vars='{"n":2}'></span><span data-i18n="stepLanguage"></span></h2>
       <div class="filter-row">
         <label class="filter-field">
-          <span>Brontaal (taal van de presentatie)</span>
+          <span data-i18n="sourceLabel"></span>
           <select id="sourceLang"></select>
         </label>
         <label class="filter-field">
-          <span>Vertalen naar</span>
+          <span data-i18n="targetLabel"></span>
           <select id="targetLang"></select>
         </label>
       </div>
       <label class="check">
         <input type="checkbox" id="includeNotes">
-        <span>Ook de sprekersnotities vertalen</span>
+        <span data-i18n="includeNotes"></span>
       </label>
       <p class="status" id="glossaryInfo" style="margin-top:10px;"></p>
 
-      <h2 class="part-title" style="margin-top:22px;"><span class="step-label">Stap 3</span>Vertalen</h2>
-      <div class="info-banner">Je presentatie wordt <b>nergens bewaard</b>: ze wordt in je browser uitgepakt en terug ingepakt. Enkel de losse dia-teksten gaan, voor de duur van de vertaling, naar de AI. Tekst in afbeeldingen en grafieken wordt niet vertaald.</div>
+      <h2 class="part-title" style="margin-top:22px;"><span class="step-label" data-i18n="step" data-i18n-vars='{"n":3}'></span><span data-i18n="stepTranslate"></span></h2>
+      <div class="info-banner" data-i18n-html="privacyBanner"></div>
       <div class="row">
-        <button class="btn" id="translateBtn" disabled>Vertalen</button>
+        <button class="btn" id="translateBtn" disabled data-i18n="translateBtn"></button>
         <span class="status" id="translateStatus"></span>
       </div>
       <div class="progress-track" id="progressBar" hidden><div class="progress-fill" id="progressFill"></div></div>
@@ -170,11 +190,11 @@ h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18p
   </div>
 
   <div class="card" id="resultCard">
-    <h2 class="part-title">Resultaat</h2>
+    <h2 class="part-title" data-i18n="resultTitle"></h2>
     <p class="part-sub" id="resultSub"></p>
     <div class="row" style="margin-top:4px;margin-bottom:16px;">
-      <button class="btn" id="downloadBtn" type="button">Download vertaalde presentatie</button>
-      <button class="btn secondary" id="newBtn" type="button">Nieuwe vertaling</button>
+      <button class="btn" id="downloadBtn" type="button" data-i18n="downloadBtn"></button>
+      <button class="btn secondary" id="newBtn" type="button" data-i18n="newBtn"></button>
     </div>
     <div class="stat-row" id="resultStats"></div>
     <div id="reportBody"></div>
@@ -186,17 +206,17 @@ h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18p
       <button class="collapse-toggle" id="glossaryToggle" type="button" aria-expanded="true" aria-controls="glossaryBody" aria-label="Sectie in-/uitklappen">&#9662;</button>
     </div>
     <div id="glossaryBody">
-      <h2 class="part-title">Woordenlijst beheren</h2>
-      <p class="part-sub">Upload de vertaalwoordenlijst (Excel) met één kolom per taal: Nederlands, Frans, Duits, Engels, Spaans (de kolomkoppen mogen in een andere volgorde staan). De opgeladen lijst <b>vervangt</b> de huidige volledig. Termen in de lijst zijn bindend bij elke vertaling.</p>
-      <p class="status" id="glossaryCurrent">Huidige lijst wordt geladen...</p>
+      <h2 class="part-title" data-i18n="glossaryTitle"></h2>
+      <p class="part-sub" data-i18n-html="glossarySub"></p>
+      <p class="status" id="glossaryCurrent" data-i18n="glossaryLoading"></p>
       <div class="dropzone" id="glossaryDropzone">
-        <p><strong>Sleep de woordenlijst hierheen</strong> of klik om te bladeren</p>
-        <p class="fname" id="glossaryFname">Geen bestand gekozen</p>
+        <p data-i18n-html="dropGlossary"></p>
+        <p class="fname" id="glossaryFname" data-i18n="noFile"></p>
         <input type="file" id="glossaryFileInput" accept=".xlsx,.xls,.csv" hidden>
       </div>
       <div class="row">
-        <button class="btn" id="glossaryUpdateBtn" disabled>Woordenlijst bijwerken</button>
-        <button class="btn secondary" id="glossaryExportBtn" type="button">Huidige lijst downloaden</button>
+        <button class="btn" id="glossaryUpdateBtn" disabled data-i18n="glossaryUpdateBtn"></button>
+        <button class="btn secondary" id="glossaryExportBtn" type="button" data-i18n="glossaryExportBtn"></button>
         <span class="status" id="glossaryStatus"></span>
       </div>
     </div>
@@ -208,15 +228,15 @@ h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18p
       <button class="collapse-toggle" id="usersToggle" type="button" aria-expanded="true" aria-controls="usersBody" aria-label="Sectie in-/uitklappen">&#9662;</button>
     </div>
     <div id="usersBody">
-      <h2 class="part-title">Gebruikers beheren</h2>
-      <p class="part-sub">Upload een Excel met kolommen USER, PW en ROLE (admin of user) om gebruikers toe te voegen of bij te werken. Bestaande gebruikers die niet in het bestand staan, blijven ongewijzigd.</p>
+      <h2 class="part-title" data-i18n="usersTitle"></h2>
+      <p class="part-sub" data-i18n="usersSub"></p>
       <div class="dropzone" id="usersDropzone">
-        <p><strong>Sleep het Users-Excel hierheen</strong> of klik om te bladeren</p>
-        <p class="fname" id="usersFname">Geen bestand gekozen</p>
+        <p data-i18n-html="dropUsers"></p>
+        <p class="fname" id="usersFname" data-i18n="noFile"></p>
         <input type="file" id="usersFileInput" accept=".xlsx,.xls,.csv" hidden>
       </div>
       <div class="row">
-        <button class="btn" id="usersUpdateBtn" disabled>Users bijwerken</button>
+        <button class="btn" id="usersUpdateBtn" disabled data-i18n="usersUpdateBtn"></button>
         <span class="status" id="usersStatus"></span>
       </div>
     </div>
@@ -225,6 +245,7 @@ h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18p
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=202610111200"></script>
+<script src="i18n.js?v=202610111400"></script>
+<script src="app.js?v=202610111400"></script>
 </body>
 </html>
