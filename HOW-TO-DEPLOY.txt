@@ -1,0 +1,6 @@
+in deze map, open de terminal
+
+1.  git add . ; git commit -m "beschrijving" ; git push   (frontend naar GitHub Pages)
+2.  npx wrangler deploy                                     (backend naar Cloudflare)
+
+Wijzigde je app.js? Verhoog dan ook ?v=... onderaan index.html.

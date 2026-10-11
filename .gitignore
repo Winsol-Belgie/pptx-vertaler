@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.env
+*.local
+.dev.vars
+*.secret.json
+*.xlsx
+*.pptx

@@ -1,0 +1,14 @@
+{
+  "name": "pptx-vertaler",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "secret:set-key": "wrangler secret put ANTHROPIC_API_KEY",
+    "secret:set-pepper": "wrangler secret put PASSWORD_PEPPER",
+    "hash-password": "node scripts/hash-password.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

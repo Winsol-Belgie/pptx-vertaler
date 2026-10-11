@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Winsol Presentatievertaler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f3f4f4; --paper-2:#ffffff; --ink:#23292b; --ink-soft:#485155; --ink-faint:#9aa2a4;
+  --line:#e4e7e7; --surface-dark:#2f3638; --accent:#fed501; --accent-ink:#23292b; --info:#0d5475;
+  --ok:#2f7d4f; --ok-bg:#e7f2ec; --warn:#b56b00; --warn-bg:#fbecd5; --bad:#d83b3a; --bad-bg:#fce3e2;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink-soft);font-family:'Poppins',Arial,sans-serif;}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px;}
+header.hero{background:var(--paper-2);border:1px solid var(--line);border-radius:18px;padding:28px 26px;position:relative;overflow:hidden;margin-bottom:24px;}
+header.hero::before,header.hero::after{content:"";position:absolute;width:70px;height:70px;background:var(--accent);}
+header.hero::before{top:0;left:0;clip-path:polygon(0 0,100% 0,0 100%);}
+header.hero::after{bottom:0;right:0;clip-path:polygon(100% 100%,0 100%,100% 0);}
+header.hero h1{margin:0 0 4px;color:var(--ink);font-weight:700;font-size:26px;}
+header.hero p{margin:0;color:var(--ink-faint);font-size:14px;line-height:1.55;max-width:74ch;}
+.card{background:var(--paper-2);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:20px;}
+.dropzone{border:2px dashed var(--line);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:.15s;}
+.dropzone.drag{border-color:var(--accent);background:#fffdf0;}
+.dropzone p{margin:6px 0;}
+.dropzone .fname{color:var(--info);font-weight:600;word-break:break-all;}
+button{font-family:inherit;}
+.btn{background:var(--accent);color:var(--accent-ink);border:none;border-radius:11px;padding:12px 22px;font-weight:700;font-size:14px;cursor:pointer;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn.secondary{background:var(--surface-dark);color:#fff;}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;}
+.status{font-size:13px;color:var(--ink-faint);}
+.status.err{color:var(--bad);}
+.status.ok{color:var(--ok);}
+.progress-track{background:var(--line);border-radius:8px;height:8px;overflow:hidden;margin-top:12px;}
+.progress-fill{background:var(--accent);height:100%;width:0%;transition:width .25s ease;}
+h2.part-title{color:var(--ink);font-size:17px;font-weight:700;margin:0 0 4px;}
+.part-sub{color:var(--ink-faint);font-size:12px;margin:0 0 12px;line-height:1.55;}
+.step-label{display:inline-block;background:var(--surface-dark);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;margin-right:8px;vertical-align:middle;}
+.info-banner{background:#fff9da;border-left:4px solid var(--accent);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--ink);margin-bottom:16px;line-height:1.55;}
+.filter-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:14px 0 6px;}
+.filter-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--ink-faint);font-weight:600;min-width:0;}
+.filter-field select{border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:13px;color:var(--ink-soft);background:var(--paper-2);}
+.filter-field select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);cursor:pointer;margin-top:12px;}
+.check input{margin:0;}
+.stat-row{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 16px;}
+.stat{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:130px;flex:1;}
+.stat b{display:block;font-size:22px;color:var(--info);font-weight:700;}
+.stat span{font-size:12px;color:var(--ink-faint);}
+h3.part-subtitle{color:var(--ink-soft);font-size:14px;font-weight:700;margin:18px 0 6px;}
+.pill{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap;}
+.pill.issue{background:var(--warn-bg);color:var(--warn);}
+.pill.negative{background:var(--bad-bg);color:var(--bad);}
+.pill.ok{background:var(--ok-bg);color:var(--ok);}
+.report-list{margin:0;padding:0;list-style:none;}
+.report-list li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;}
+.report-list li:last-child{border-bottom:none;}
+.report-list .ranked-cat{flex-shrink:0;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:2px 9px;font-size:11px;color:var(--ink-soft);white-space:nowrap;}
+.report-list .txt{flex:1;min-width:0;}
+.report-list .orig{color:var(--ink-faint);font-size:12px;}
+.report-empty{font-size:13px;color:var(--ink-faint);margin:4px 0;}
+.term-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px;}
+.term-chip{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:11.5px;color:var(--ink-soft);}
+#resultCard{display:none;}
+
+/* In-/uitklapbare kaarten — zelfde gedrag als Feedbackloop. */
+.card-head{display:flex;justify-content:flex-end;align-items:center;gap:10px;}
+.card-head.has-summary{justify-content:space-between;}
+.collapse-summary{margin:0;font-size:13px;font-weight:600;color:var(--ink);}
+.collapse-toggle{flex-shrink:0;background:var(--paper);border:1px solid var(--line);border-radius:8px;width:28px;height:28px;font-size:13px;line-height:1;cursor:pointer;color:var(--ink-soft);}
+.collapse-toggle:hover{background:var(--line);}
+
+/* --- Login (overgenomen van Feedbackloop) --- */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-card{background:var(--paper-2);border:1px solid var(--line);border-radius:18px;padding:32px 28px;max-width:360px;width:100%;text-align:center;}
+.login-card h1{font-size:20px;margin:0 0 4px;color:var(--ink);}
+.login-card .login-sub{color:var(--ink-faint);font-size:13px;margin:0 0 20px;}
+.login-form{display:flex;flex-direction:column;gap:12px;text-align:left;}
+.login-form input[type=text],.login-form input[type=password]{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:14px;background:var(--paper);}
+.login-form input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.login-pw-wrap{position:relative;}
+.login-pw-wrap input{padding-right:38px !important;}
+.login-pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;padding:4px;}
+.login-remember{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);cursor:pointer;}
+.login-remember input{margin:0;}
+.login-btn{width:100%;}
+.login-error{color:var(--bad);font-size:13px;min-height:16px;}
+#appRoot{display:none;}
+.topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:-8px;padding-bottom:16px;font-size:13px;color:var(--ink-faint);}
+.topbar b{color:var(--ink);}
+.topbar .btn.secondary{padding:6px 14px;font-size:12px;border-radius:8px;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>Presentatievertaler</h1>
+    <p class="login-sub">Log in om verder te gaan.</p>
+    <div class="login-form">
+      <input type="text" id="loginUsername" placeholder="Gebruikersnaam" autocomplete="username">
+      <div class="login-pw-wrap">
+        <input type="password" id="loginPassword" placeholder="Wachtwoord" autocomplete="current-password">
+        <button type="button" id="loginPwToggle" class="login-pw-eye" title="Wachtwoord tonen/verbergen" tabindex="-1">&#128065;</button>
+      </div>
+      <label class="login-remember">
+        <input type="checkbox" id="loginRemember">
+        <span>Blijf aangemeld</span>
+      </label>
+      <button class="btn login-btn" id="loginSubmitBtn" type="button">Aanmelden</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="appRoot">
+  <div class="topbar" id="topbar" hidden>
+    <span>Ingelogd als <b id="topbarUser"></b> (<span id="topbarRole"></span>)</span>
+    <button class="btn secondary" id="logoutBtn" type="button">Uitloggen</button>
+  </div>
+
+  <header class="hero">
+    <h1>Presentatievertaler</h1>
+    <p>Sleep een PowerPoint in de tool, kies de taal en download de vertaalde versie. De opmaak blijft volledig behouden: enkel de tekst wordt vervangen, met de Winsol-woordenlijst als vaste terminologie.</p>
+  </header>
+
+  <div class="card" id="uploadCard">
+    <div class="card-head">
+      <p class="collapse-summary" id="uploadSummary" hidden></p>
+      <button class="collapse-toggle" id="uploadToggle" type="button" aria-expanded="true" aria-controls="uploadBody" aria-label="Sectie in-/uitklappen">&#9662;</button>
+    </div>
+    <div id="uploadBody">
+      <h2 class="part-title"><span class="step-label">Stap 1</span>Presentatie</h2>
+      <p class="part-sub">Enkel .pptx-bestanden, maximaal 30 MB.</p>
+      <div class="dropzone" id="dropzone">
+        <p><strong>Sleep je PowerPoint hierheen</strong> of klik om te bladeren</p>
+        <p class="fname" id="fname">Geen bestand gekozen</p>
+        <input type="file" id="fileInput" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden>
+      </div>
+      <p class="status" id="fileStatus" style="margin-top:10px;"></p>
+
+      <h2 class="part-title" style="margin-top:22px;"><span class="step-label">Stap 2</span>Taal</h2>
+      <div class="filter-row">
+        <label class="filter-field">
+          <span>Brontaal (taal van de presentatie)</span>
+          <select id="sourceLang"></select>
+        </label>
+        <label class="filter-field">
+          <span>Vertalen naar</span>
+          <select id="targetLang"></select>
+        </label>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="includeNotes">
+        <span>Ook de sprekersnotities vertalen</span>
+      </label>
+      <p class="status" id="glossaryInfo" style="margin-top:10px;"></p>
+
+      <h2 class="part-title" style="margin-top:22px;"><span class="step-label">Stap 3</span>Vertalen</h2>
+      <div class="info-banner">Je presentatie wordt <b>nergens bewaard</b>: ze wordt in je browser uitgepakt en terug ingepakt. Enkel de losse dia-teksten gaan, voor de duur van de vertaling, naar de AI. Tekst in afbeeldingen en grafieken wordt niet vertaald.</div>
+      <div class="row">
+        <button class="btn" id="translateBtn" disabled>Vertalen</button>
+        <span class="status" id="translateStatus"></span>
+      </div>
+      <div class="progress-track" id="progressBar" hidden><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard">
+    <h2 class="part-title">Resultaat</h2>
+    <p class="part-sub" id="resultSub"></p>
+    <div class="row" style="margin-top:4px;margin-bottom:16px;">
+      <button class="btn" id="downloadBtn" type="button">Download vertaalde presentatie</button>
+      <button class="btn secondary" id="newBtn" type="button">Nieuwe vertaling</button>
+    </div>
+    <div class="stat-row" id="resultStats"></div>
+    <div id="reportBody"></div>
+  </div>
+
+  <div class="card" id="glossaryCard" hidden>
+    <div class="card-head">
+      <p class="collapse-summary" id="glossarySummary" hidden></p>
+      <button class="collapse-toggle" id="glossaryToggle" type="button" aria-expanded="true" aria-controls="glossaryBody" aria-label="Sectie in-/uitklappen">&#9662;</button>
+    </div>
+    <div id="glossaryBody">
+      <h2 class="part-title">Woordenlijst beheren</h2>
+      <p class="part-sub">Upload de vertaalwoordenlijst (Excel) met één kolom per taal: Nederlands, Frans, Duits, Engels, Spaans (de kolomkoppen mogen in een andere volgorde staan). De opgeladen lijst <b>vervangt</b> de huidige volledig. Termen in de lijst zijn bindend bij elke vertaling.</p>
+      <p class="status" id="glossaryCurrent">Huidige lijst wordt geladen...</p>
+      <div class="dropzone" id="glossaryDropzone">
+        <p><strong>Sleep de woordenlijst hierheen</strong> of klik om te bladeren</p>
+        <p class="fname" id="glossaryFname">Geen bestand gekozen</p>
+        <input type="file" id="glossaryFileInput" accept=".xlsx,.xls,.csv" hidden>
+      </div>
+      <div class="row">
+        <button class="btn" id="glossaryUpdateBtn" disabled>Woordenlijst bijwerken</button>
+        <button class="btn secondary" id="glossaryExportBtn" type="button">Huidige lijst downloaden</button>
+        <span class="status" id="glossaryStatus"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="usersCard" hidden>
+    <div class="card-head">
+      <p class="collapse-summary" id="usersSummary" hidden></p>
+      <button class="collapse-toggle" id="usersToggle" type="button" aria-expanded="true" aria-controls="usersBody" aria-label="Sectie in-/uitklappen">&#9662;</button>
+    </div>
+    <div id="usersBody">
+      <h2 class="part-title">Gebruikers beheren</h2>
+      <p class="part-sub">Upload een Excel met kolommen USER, PW en ROLE (admin of user) om gebruikers toe te voegen of bij te werken. Bestaande gebruikers die niet in het bestand staan, blijven ongewijzigd.</p>
+      <div class="dropzone" id="usersDropzone">
+        <p><strong>Sleep het Users-Excel hierheen</strong> of klik om te bladeren</p>
+        <p class="fname" id="usersFname">Geen bestand gekozen</p>
+        <input type="file" id="usersFileInput" accept=".xlsx,.xls,.csv" hidden>
+      </div>
+      <div class="row">
+        <button class="btn" id="usersUpdateBtn" disabled>Users bijwerken</button>
+        <span class="status" id="usersStatus"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="app.js?v=202610110900"></script>
+</body>
+</html>
