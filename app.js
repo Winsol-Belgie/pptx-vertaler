@@ -10,7 +10,7 @@
 // vertaling bestaat enkel in het geheugen van dit tabblad.
 
 // URL van de Cloudflare Worker (zie worker.js / README.md).
-const API_URL = 'https://pptx-vertaler.REPLACE-ME.workers.dev/';
+const API_URL = 'https://pptx-vertaler.gwenn-vanthournout.workers.dev/';
 
 const MAX_FILE_MB = 30;
 // Grens op de hoeveelheid tekst per presentatie: dit bepaalt de AI-kost,
