@@ -557,6 +557,7 @@ async function runTranslation() {
             id: String(unique.size + 1),
             texts,
             fixed: segs.map(isFixedSegment),
+            sendTexts: encodeSymbols(texts),
             occurrences: [],
             slide: part.slide,
           });
@@ -726,7 +727,7 @@ async function translateBatch(batch, src, tgt) {
     mode: 'translate',
     source: src,
     target: tgt,
-    items: batch.map((it) => ({ id: it.id, slide: it.slide ?? '', segs: it.texts })),
+    items: batch.map((it) => ({ id: it.id, slide: it.slide ?? '', segs: it.sendTexts })),
   };
   let lastErr = null;
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -764,6 +765,7 @@ function validTranslation(it, segs) {
 // de vangnetten die de opmaak beschermen.
 function finalizeSegments(it, segs, report) {
   const orig = it.texts;
+  SYMBOL_LOOKUP = new Map((orig.join('').match(PUA_RE) || []).map((ch, i) => [i + 1, ch]));
   if (!Array.isArray(segs) || !segs.some((s) => String(s || '').trim())) {
     report.untranslated.push({ slide: it.slide, before: orig.join('') });
     return null;
@@ -775,23 +777,53 @@ function finalizeSegments(it, segs, report) {
     // Ander aantal segmenten: volledige vertaling in het eerste
     // tekstsegment, de andere tekstsegmenten leeg. Tekst klopt, enkel de
     // opmaak binnen de alinea (bv. één vet woord) gaat verloren.
-    const textual = segs.map((s) => String(s ?? '')).join(' ').replace(PUA_RE, '');
+    const textual = segs.map((s) => String(s ?? '')).join(' ').replace(PUA_RE, '').replace(SYM_TOKEN_RE, '');
     const first = it.fixed.indexOf(false);
     out = orig.map((o, i) => (it.fixed[i] ? o : i === first ? keepEdges(o, textual.replace(/\s+/g, ' ').trim()) : ''));
     report.simplified.push({ slide: it.slide, before: orig.join(''), after: out.join('') });
   }
-  // Symbool-tekens (pijltjes, vinkjes uit Wingdings) moeten behouden blijven.
-  out = out.map((s, i) => {
-    const need = (orig[i].match(PUA_RE) || []).join('');
-    const have = (s.match(PUA_RE) || []).join('');
-    if (need && need !== have) {
-      report.symbols.push({ slide: it.slide, before: orig.join('') });
-      return orig[i];
-    }
-    return s;
-  });
+  // Symbool-tekens (pijltjes, vinkjes uit Wingdings) terugzetten. De AI kreeg
+  // ze als plaatshouders ⟦S1⟧, ⟦S2⟧… omdat ze die tekens zelf niet goed
+  // overneemt. Ontbreekt een plaatshouder toch, dan zetten we het symbool
+  // terug op dezelfde plek (vooraan of achteraan het segment); enkel als dat
+  // niet kan, blijft het originele segment staan.
+  out = out.map((s, i) => restoreSymbols(orig[i], s, () => report.symbols.push({ slide: it.slide, before: orig.join('') })));
   return out;
 }
+
+// ------------------------------------------------------------
+// Symbolen (Wingdings/Symbol-tekens uit de Unicode "private use area")
+// ------------------------------------------------------------
+const SYM_TOKEN_RE = /⟦S(\d+)⟧/g;
+
+function encodeSymbols(texts) {
+  let n = 0;
+  return texts.map((txt) => txt.replace(PUA_RE, () => `⟦S${++n}⟧`));
+}
+
+function restoreSymbols(orig, translated, onFail) {
+  const syms = orig.match(PUA_RE) || [];
+  // Plaatshouders → echte tekens. Nummering loopt over de hele alinea, dus
+  // per segment zoeken we het teken op via de volgorde in de alinea.
+  let s = translated.replace(SYM_TOKEN_RE, (m, k) => SYMBOL_LOOKUP.get(Number(k)) || '');
+  if (!syms.length) return s.replace(PUA_RE, '');
+  const have = (s.match(PUA_RE) || []).join('');
+  if (have === syms.join('')) return s;
+  // Ontbrekend symbool: zat het vooraan of achteraan het segment?
+  const core = orig.replace(/^[\s\u00a0]+|[\s\u00a0]+$/g, '');
+  const lead = orig.match(/^[\s\u00a0]*/)[0];
+  const startSym = core.match(/^([\uE000-\uF8FF]+)([\s\u00a0]*)/u);
+  const endSym = core.match(/([\s\u00a0]*)([\uE000-\uF8FF]+)$/u);
+  let body = s.replace(PUA_RE, '').replace(/^[\s\u00a0]+|[\s\u00a0]+$/g, '');
+  const trail = orig.match(/[\s\u00a0]*$/)[0];
+  if (startSym && startSym[1].length === syms.length) return lead + startSym[1] + startSym[2] + body + trail;
+  if (endSym && endSym[2].length === syms.length) return lead + body + endSym[1] + endSym[2] + trail;
+  onFail();
+  return orig;
+}
+
+// Wordt per alinea gevuld in finalizeSegments (nummer → symbool).
+let SYMBOL_LOOKUP = new Map();
 
 // Behoud de spaties/tabs vooraan en achteraan het oorspronkelijke segment.
 function keepEdges(orig, translated) {
