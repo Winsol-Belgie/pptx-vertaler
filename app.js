@@ -137,7 +137,7 @@ async function doLogin() {
   try {
     const { ok, status, data } = await apiRequest({ mode: 'login', username, password, remember });
     if (!ok) {
-      loginError.textContent = status === 401 ? t('loginFailed') : (data.error || t('loginGenericFail'));
+      loginError.textContent = status === 401 ? t('loginFailed') : status === 429 ? t('tooManyAttempts') : (data.error || t('loginGenericFail'));
       return;
     }
     authToken = data.token;
@@ -1134,6 +1134,7 @@ $('usersUpdateBtn').addEventListener('click', async () => {
       return;
     }
     let msg = t('usersUpdated', { u: data.updated, t: data.total });
+    if (data.deleted) msg += ' ' + t('usersDeleted', { n: data.deleted });
     if (data.errors && data.errors.length) msg += ' ' + t('errorsPrefix', { list: data.errors.join('; ') });
     setStatus(st, msg, data.errors && data.errors.length ? 'err' : 'ok');
     parsedUserRows = [];

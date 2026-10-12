@@ -6,3 +6,6 @@ node_modules/
 *.secret.json
 *.xlsx
 *.pptx
+
+# Documentatie (bevat account- en beveiligingsinfo) niet online
+README.md

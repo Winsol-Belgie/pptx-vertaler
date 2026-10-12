@@ -20,7 +20,11 @@
 // Optionele variabele (wrangler.toml [vars]):
 //   CLAUDE_MODEL       — standaard claude-sonnet-4-6
 
-const ALLOWED_ORIGIN = '*';
+// Enkel de eigen webpagina mag de Worker vanuit een browser aanspreken.
+// Ander adres (andere repo, eigen domein, lokaal testen)? Zet de variabele
+// ALLOWED_ORIGIN in wrangler.toml [vars] of in .dev.vars (bv. "*" om lokaal te testen).
+const DEFAULT_ALLOWED_ORIGIN = 'https://winsol-belgie.github.io';
+let ALLOWED_ORIGIN = DEFAULT_ALLOWED_ORIGIN;
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
 // Grenzen per aanroep (de frontend splitst grotere presentaties zelf op in
@@ -83,6 +87,7 @@ function systemPrompt() {
 
 export default {
   async fetch(request, env) {
+    ALLOWED_ORIGIN = env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN;
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders() });
     }
@@ -98,7 +103,7 @@ export default {
     }
 
     // --- Auth-routes: geen AI-aanroep. ---
-    if (body.mode === 'login') return handleLogin(body, env);
+    if (body.mode === 'login') return handleLogin(body, env, request);
     if (body.mode === 'logout') return handleLogout(request, env);
     if (body.mode === 'auth_me') {
       const session = await getSession(request, env);
@@ -141,7 +146,7 @@ export default {
       return handleGlossaryPut(body, env, session);
     }
     if (body.mode === 'admin_upsert_users') {
-      return handleAdminUpsertUsers(body, env);
+      return handleAdminUpsertUsers(body, env, session);
     }
 
     return jsonResponse({ error: 'Onbekende actie.' }, 400);
@@ -331,19 +336,57 @@ function randomToken() {
   return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Beveiliging van de login:
+// - wachtwoorden enkel als hash (sha256 + geheime PASSWORD_PEPPER);
+// - na 5 mislukte pogingen voor dezelfde gebruikersnaam, of 20 vanaf hetzelfde
+//   IP-adres, wordt aanmelden 15 minuten geblokkeerd;
+// - een sessie is enkel geldig zolang de gebruiker nog bestaat; rol-wijzigingen
+//   en verwijderingen gelden dus meteen, ook voor wie al aangemeld is;
+// - wachtwoorden zijn minstens 8 tekens.
+const MAX_FAILS_USER = 5;
+const MAX_FAILS_IP = 20;
+const FAIL_WINDOW = 60 * 15; // seconden
+const MIN_PASSWORD_LENGTH = 8;
+
+function timingSafeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 async function getSession(request, env) {
   const token = request.headers.get('X-Auth-Token') || '';
   if (!token) return null;
   const raw = await env.VERTALER_KV.get(`session:${token}`);
   if (!raw) return null;
+  let session;
   try {
-    return JSON.parse(raw);
+    session = JSON.parse(raw);
   } catch {
     return null;
   }
+  // Bestaat de gebruiker nog? Rol altijd uit het actuele gebruikersrecord.
+  const user = await env.VERTALER_KV.get(`user:${session.username}`, 'json');
+  if (!user) {
+    await env.VERTALER_KV.delete(`session:${token}`);
+    return null;
+  }
+  return { username: user.username, role: user.role };
 }
 
-async function handleLogin(body, env) {
+async function readFails(env, key) {
+  const v = await env.VERTALER_KV.get(key);
+  return v ? parseInt(v, 10) || 0 : 0;
+}
+
+async function addFail(env, key) {
+  const n = (await readFails(env, key)) + 1;
+  await env.VERTALER_KV.put(key, String(n), { expirationTtl: FAIL_WINDOW });
+  return n;
+}
+
+async function handleLogin(body, env, request) {
   const username = (body.username || '').trim();
   const password = body.password || '';
   const remember = !!body.remember;
@@ -353,20 +396,27 @@ async function handleLogin(body, env) {
   if (!env.PASSWORD_PEPPER) {
     return jsonResponse({ error: 'PASSWORD_PEPPER ontbreekt (wrangler secret put PASSWORD_PEPPER).' }, 500);
   }
-  const userRaw = await env.VERTALER_KV.get(`user:${username}`);
-  if (!userRaw) {
-    return jsonResponse({ error: 'Onbekende gebruikersnaam of fout wachtwoord.' }, 401);
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'onbekend';
+  const failUserKey = `fail:user:${username.toLowerCase()}`;
+  const failIpKey = `fail:ip:${ip}`;
+  const [failsUser, failsIp] = await Promise.all([readFails(env, failUserKey), readFails(env, failIpKey)]);
+  if (failsUser >= MAX_FAILS_USER || failsIp >= MAX_FAILS_IP) {
+    return jsonResponse({ error: 'Te veel mislukte pogingen. Probeer het binnen 15 minuten opnieuw.', code: 'too_many_attempts' }, 429);
   }
-  let user;
-  try {
-    user = JSON.parse(userRaw);
-  } catch {
+
+  const fail = async () => {
+    await Promise.all([addFail(env, failUserKey), addFail(env, failIpKey)]);
     return jsonResponse({ error: 'Onbekende gebruikersnaam of fout wachtwoord.' }, 401);
-  }
+  };
+
+  const user = await env.VERTALER_KV.get(`user:${username}`, 'json');
+  // Ook bij een onbekende gebruiker een hash berekenen, zodat de responstijd
+  // niet verraadt of een gebruikersnaam bestaat.
   const hash = await sha256Hex(password + env.PASSWORD_PEPPER);
-  if (hash !== user.passwordHash) {
-    return jsonResponse({ error: 'Onbekende gebruikersnaam of fout wachtwoord.' }, 401);
-  }
+  if (!user || !timingSafeEqual(hash, user.passwordHash)) return fail();
+
+  if (failsUser) await env.VERTALER_KV.delete(failUserKey);
   const token = randomToken();
   const ttl = remember ? SESSION_TTL_REMEMBER : SESSION_TTL_DEFAULT;
   await env.VERTALER_KV.put(
@@ -383,10 +433,13 @@ async function handleLogout(request, env) {
   return jsonResponse({ ok: true });
 }
 
-// Admin laadt een Users-Excel op (kolommen USER/PW/ROLE). Upsert per
-// username: bestaande gebruikers die niet in het bestand staan, blijven
-// ongewijzigd.
-async function handleAdminUpsertUsers(body, env) {
+// Admin laadt een Users-Excel op (kolommen USER/PW/ROLE). Per rij:
+//   ROLE admin/user  -> gebruiker toevoegen of bijwerken (wachtwoord verplicht);
+//   ROLE delete      -> gebruiker verwijderen (wachtwoord niet nodig).
+// Gebruikers die niet in het bestand staan, blijven ongewijzigd.
+const DELETE_ROLES = ['delete', 'verwijderen', 'verwijder', 'supprimer', 'löschen', 'eliminar', 'elimina'];
+
+async function handleAdminUpsertUsers(body, env, session) {
   if (!env.PASSWORD_PEPPER) {
     return jsonResponse({ error: 'PASSWORD_PEPPER ontbreekt (wrangler secret put PASSWORD_PEPPER).' }, 500);
   }
@@ -394,17 +447,35 @@ async function handleAdminUpsertUsers(body, env) {
   if (!users.length) return jsonResponse({ error: 'Geen gebruikers ontvangen.' }, 400);
 
   let updated = 0;
+  let deleted = 0;
   const errors = [];
   for (const raw of users) {
     const username = (raw.username || '').trim();
     const password = (raw.password || '').trim();
     const role = (raw.role || '').trim().toLowerCase();
-    if (!username || !password) {
-      errors.push(`${username || '(geen gebruikersnaam)'}: gebruikersnaam of wachtwoord ontbreekt — overgeslagen.`);
+    if (!username) {
+      errors.push('(geen gebruikersnaam) — overgeslagen.');
+      continue;
+    }
+    if (DELETE_ROLES.includes(role)) {
+      if (username === session.username) {
+        errors.push(`${username}: je kan jezelf niet verwijderen — overgeslagen.`);
+        continue;
+      }
+      await env.VERTALER_KV.delete(`user:${username}`);
+      deleted++;
       continue;
     }
     if (role !== 'admin' && role !== 'user') {
-      errors.push(`${username}: onbekende rol "${raw.role || ''}" (verwacht admin of user) — overgeslagen.`);
+      errors.push(`${username}: onbekende rol "${raw.role || ''}" (verwacht admin, user of delete) — overgeslagen.`);
+      continue;
+    }
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      errors.push(`${username}: wachtwoord ontbreekt of is korter dan ${MIN_PASSWORD_LENGTH} tekens — overgeslagen.`);
+      continue;
+    }
+    if (username === session.username && role !== 'admin') {
+      errors.push(`${username}: je kan je eigen admin-rechten niet afnemen — overgeslagen.`);
       continue;
     }
     try {
@@ -415,7 +486,7 @@ async function handleAdminUpsertUsers(body, env) {
       errors.push(`${username}: ${err.message}`);
     }
   }
-  return jsonResponse({ updated, total: users.length, errors });
+  return jsonResponse({ updated, deleted, total: users.length, errors });
 }
 
 // ============================================================
